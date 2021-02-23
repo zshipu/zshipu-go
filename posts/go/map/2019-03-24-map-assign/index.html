@@ -1,0 +1,1090 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>深入理解 Go map：赋值和扩容迁移 | 知识铺的博客</title>
+    <meta property="og:title" content="深入理解 Go map：赋值和扩容迁移 - 知识铺的博客">
+    <meta property="og:type" content="article">
+        
+    <meta property="article:published_time" content='2019-03-24T12:00:00&#43;08:00'>
+        
+        
+    <meta property="article:modified_time" content='2019-03-24T12:00:00&#43;08:00'>
+        
+    <meta name="Keywords" content="golang,go语言,go语言笔记,知识铺,java,android,博客,项目管理,python,软件架构,公众号,小程序">
+    <meta name="description" content="深入理解 Go map：赋值和扩容迁移">
+        <meta name="author" content="知识铺">
+        
+    <meta property="og:url" content="https://go.zshipu.com/posts/go/map/2019-03-24-map-assign/">
+    <link rel="shortcut icon" href='/favicon.ico'  type="image/x-icon">
+
+    <link rel="stylesheet" href='/css/normalize.css'>
+    <link rel="stylesheet" href='/css/style.css'>
+    <script type="text/javascript" src="//cdn.bootcdn.net/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+    
+    <script data-ad-client="ca-pub-2874221941555456" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+    
+    
+    
+    
+    
+    
+    
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-WLWJSST');</script>
+    
+</head>
+
+
+<body>
+
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-WLWJSST"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+
+    <header id="header" class="clearfix">
+    <div class="container">
+        <div class="col-group">
+            <div class="site-name ">
+                
+                    <a id="logo" href="https://go.zshipu.com/">
+                        知识铺的博客
+                    </a>
+                
+                <p class="description">专注于Android、Java、Go语言(golang)、移动互联网、项目管理、软件架构</p>
+            </div>
+            <div>
+                <nav id="nav-menu" class="clearfix">
+                    <a class="" href="https://go.zshipu.com/">首页</a>
+                    
+                    <a  href="https://go.zshipu.com/archives/" title="归档">归档</a>
+                    
+                    <a  href="https://go.zshipu.com/about/" title="关于">关于</a>
+                    
+                </nav>
+            </div>
+        </div>
+    </div>
+</header>
+
+    <div id="body">
+        <div class="container">
+            <div class="col-group">
+
+                <div class="col-8" id="main">
+                    
+<div class="res-cons">
+    <style type="text/css">
+    .post-toc {
+        position: fixed;
+        width: 200px;
+        margin-left: -210px;
+        padding: 5px 10px;
+        font-family: Athelas, STHeiti, Microsoft Yahei, serif;
+        font-size: 12px;
+        border: 1px solid rgba(0, 0, 0, .07);
+        border-radius: 5px;
+        background-color: rgba(255, 255, 255, 0.98);
+        background-clip: padding-box;
+        -webkit-box-shadow: 1px 1px 2px rgba(0, 0, 0, .125);
+        box-shadow: 1px 1px 2px rgba(0, 0, 0, .125);
+        word-wrap: break-word;
+        white-space: nowrap;
+        -webkit-box-sizing: border-box;
+        box-sizing: border-box;
+        z-index: 999;
+        cursor: pointer;
+        max-height: 70%;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    .post-toc .post-toc-title {
+        width: 100%;
+        margin: 0 auto;
+        font-size: 20px;
+        font-weight: 400;
+        text-transform: uppercase;
+        text-align: center;
+    }
+
+    .post-toc .post-toc-content {
+        font-size: 15px;
+    }
+
+    .post-toc .post-toc-content>nav>ul {
+        margin: 10px 0;
+    }
+
+    .post-toc .post-toc-content ul {
+        padding-left: 20px;
+        list-style: square;
+        margin: 0.5em;
+        line-height: 1.8em;
+    }
+
+    .post-toc .post-toc-content ul ul {
+        padding-left: 15px;
+        display: none;
+    }
+
+    @media print,
+    screen and (max-width:1057px) {
+        .post-toc {
+            display: none;
+        }
+    }
+</style>
+<div class="post-toc" style="position: absolute; top: 188px;">
+    <h2 class="post-toc-title">文章目录</h2>
+    <div class="post-toc-content">
+        <nav id="TableOfContents">
+<ul>
+<li>
+<ul>
+<li><a href="#概要">概要</a>
+<ul>
+<li><a href="#哈希函数">哈希函数</a></li>
+<li><a href="#链地址法">链地址法</a></li>
+<li><a href="#桶-溢出桶">桶/溢出桶</a></li>
+</ul></li>
+<li><a href="#前言">前言</a></li>
+<li><a href="#赋值">赋值</a>
+<ul>
+<li><a href="#函数原型">函数原型</a></li>
+<li><a href="#源码">源码</a>
+<ul>
+<li><a href="#第一阶段-校验和初始化">第一阶段：校验和初始化</a></li>
+<li><a href="#第二阶段-寻找可插入位和更新既有值">第二阶段：寻找可插入位和更新既有值</a></li>
+<li><a href="#第三阶段-申请新的插入位和插入新值">第三阶段：申请新的插入位和插入新值</a></li>
+<li><a href="#第四阶段-写入">第四阶段：写入</a></li>
+</ul></li>
+<li><a href="#小结">小结</a></li>
+</ul></li>
+<li><a href="#扩容">扩容</a>
+<ul>
+<li><a href="#什么时候扩容">什么时候扩容</a></li>
+<li><a href="#什么时候受影响">什么时候受影响</a></li>
+<li><a href="#因子关系">因子关系</a></li>
+<li><a href="#源码剖析">源码剖析</a>
+<ul>
+<li><a href="#第一阶段-确定扩容容量规则">第一阶段：确定扩容容量规则</a></li>
+<li><a href="#第二阶段-初始化-交换新旧-桶-溢出桶">第二阶段：初始化、交换新旧 桶/溢出桶</a></li>
+<li><a href="#第三阶段-扩容">第三阶段：扩容</a>
+<ul>
+<li><a href="#为什么是增量扩容">为什么是增量扩容？</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#小结-1">小结</a></li>
+</ul></li>
+<li><a href="#迁移">迁移</a></li>
+<li><a href="#总结">总结</a></li>
+</ul></li>
+</ul>
+</nav>
+    </div>
+</div>
+<script type="text/javascript">
+    $(document).ready(function () {
+        var postToc = $(".post-toc");
+        if (postToc.length) {
+            var leftPos = $("#main").offset().left;
+            if(leftPos<220){
+                postToc.css({"width":leftPos-10,"margin-left":(0-leftPos)})
+            }
+
+            var t = postToc.offset().top - 20,
+                a = {
+                    start: {
+                        position: "absolute",
+                        top: t
+                    },
+                    process: {
+                        position: "fixed",
+                        top: 20
+                    },
+                };
+            $(window).scroll(function () {
+                var e = $(window).scrollTop();
+                e < t ? postToc.css(a.start) : postToc.css(a.process)
+            })
+        }
+    })
+</script>
+    <article class="post">
+        <header>
+            <h1 class="post-title">深入理解 Go map：赋值和扩容迁移</h1>
+        </header>
+        <date class="post-meta meta-date">
+            2019年3月24日
+        </date>
+        
+        
+        <div class="post-meta">
+            <span id="busuanzi_container_page_pv">|<span id="busuanzi_value_page_pv"></span><span>
+                    阅读</span></span>
+        </div>
+        
+        
+        <div class="clear" style="display: none">
+            <div class="toc-article">
+                <div class="toc-title">文章目录</div>
+            </div>
+        </div>
+        
+        <div class="post-content">
+            
+
+<h2 id="概要">概要</h2>
+
+<p>在 <a href="https://book.zshipu.com/golang/map/map-access.html">上一章节</a> 中，数据结构小节里讲解了大量基础字段，可能你会疑惑需要 #&amp;（！……#（！￥！ 来干嘛？接下来我们一起简单了解一下基础概念。再开始研讨今天文章的重点内容。我相信这样你能更好的读懂这篇文章</p>
+
+<h3 id="哈希函数">哈希函数</h3>
+
+<p>哈希函数，又称散列算法、散列函数。主要作用是通过特定算法将数据根据一定规则组合重新生成得到一个<strong>散列值</strong></p>
+
+<p>而在哈希表中，其生成的散列值常用于寻找其键映射到哪一个桶上。而一个好的哈希函数，应当尽量少的出现哈希冲突，以此保证操作哈希表的时间复杂度（但是哈希冲突在目前来讲，是无法避免的。我们需要 “解决” 它）</p>
+
+<p><img src="http://wx3.sinaimg.cn/large/006fVPCvly1g161h7r7hgj30is0dmjro.jpg" alt="image" /></p>
+
+<h3 id="链地址法">链地址法</h3>
+
+<p>在哈希操作中，相当核心的一个处理动作就是 “哈希冲突” 的解决。而在 Go map 中采用的就是 &ldquo;链地址法 &rdquo; 去解决哈希冲突，又称 &ldquo;拉链法&rdquo;。其主要做法是数组 + 链表的数据结构，其溢出节点的存储内存都是动态申请的，因此相对更灵活。而每一个元素都是一个链表。如下图：</p>
+
+<p><img src="http://wx4.sinaimg.cn/large/006fVPCvly1g1dw2b8t0ej30e60cy747.jpg" alt="image" /></p>
+
+<h3 id="桶-溢出桶">桶/溢出桶</h3>
+
+<pre><code class="language-go">type hmap struct {
+	...
+	buckets    unsafe.Pointer
+    ...
+	extra *mapextra
+}
+
+type mapextra struct {
+	overflow    *[]*bmap
+	oldoverflow *[]*bmap
+	nextOverflow *bmap
+}
+</code></pre>
+
+<p>在上章节中，我们介绍了 Go map 中的桶和溢出桶的概念，在其桶中只能存储 8 个键值对元素。当超过 8 个时，将会使用溢出桶进行存储或进行扩容</p>
+
+<p>你可能会有疑问，hint 大于 8 又会怎么样？答案很明显，性能问题，其时间复杂度改变（也就是执行效率出现问题）</p>
+
+<h2 id="前言">前言</h2>
+
+<p>概要复习的差不多后，接下来我们将一同研讨 Go map 的另外三个核心行为：赋值、扩容、迁移。正式开始我们的研讨之旅吧 ：）</p>
+
+<h2 id="赋值">赋值</h2>
+
+<pre><code class="language-go">m := make(map[int32]string)
+m[0] = &quot;zshipu&quot;
+</code></pre>
+
+<h3 id="函数原型">函数原型</h3>
+
+<p>在 map 的赋值动作中，依旧是针对 <sup>32</sup>&frasl;<sub>64</sub> 位、string、pointer 类型有不同的转换处理，总的函数原型如下：</p>
+
+<pre><code class="language-go">func mapassign(t *maptype, h *hmap, key unsafe.Pointer) unsafe.Pointer
+func mapaccess1_fast32(t *maptype, h *hmap, key uint32) unsafe.Pointer
+func mapaccess2_fast32(t *maptype, h *hmap, key uint32) (unsafe.Pointer, bool)
+func mapassign_fast32(t *maptype, h *hmap, key uint32) unsafe.Pointer
+func mapassign_fast32ptr(t *maptype, h *hmap, key unsafe.Pointer) unsafe.Pointer
+
+func mapaccess1_fast64(t *maptype, h *hmap, key uint64) unsafe.Pointer
+func mapaccess2_fast64(t *maptype, h *hmap, key uint64) (unsafe.Pointer, bool)
+func mapassign_fast64(t *maptype, h *hmap, key uint64) unsafe.Pointer
+func mapassign_fast64ptr(t *maptype, h *hmap, key unsafe.Pointer) unsafe.Pointer
+func mapaccess1_faststr(t *maptype, h *hmap, ky string) unsafe.Pointer
+func mapaccess2_faststr(t *maptype, h *hmap, ky string) (unsafe.Pointer, bool)
+func mapassign_faststr(t *maptype, h *hmap, s string) unsafe.Pointer
+...
+</code></pre>
+
+<p>接下来我们将分成几个部分去看看底层在赋值的时候，都做了些什么处理？</p>
+
+<h3 id="源码">源码</h3>
+
+<h4 id="第一阶段-校验和初始化">第一阶段：校验和初始化</h4>
+
+<pre><code class="language-go">func mapassign(t *maptype, h *hmap, key unsafe.Pointer) unsafe.Pointer {
+	if h == nil {
+		panic(plainError(&quot;assignment to entry in nil map&quot;))
+	}
+	...
+	if h.flags&amp;hashWriting != 0 {
+		throw(&quot;concurrent map writes&quot;)
+	}
+	alg := t.key.alg
+	hash := alg.hash(key, uintptr(h.hash0))
+
+	h.flags |= hashWriting
+
+	if h.buckets == nil {
+		h.buckets = newobject(t.bucket) // newarray(t.bucket, 1)
+	}
+    ...
+}
+</code></pre>
+
+<ul>
+<li>判断 hmap 是否已经初始化（是否为 nil）</li>
+<li>判断是否并发读写 map，若是则抛出异常</li>
+<li>根据 key 的不同类型调用不同的 hash 方法计算得出 hash 值</li>
+<li>设置 flags 标志位，表示有一个 goroutine 正在写入数据。因为 <code>alg.hash</code> 有可能出现 <code>panic</code> 导致异常</li>
+<li>判断 buckets 是否为 nil，若是则调用 <code>newobject</code> 根据当前 bucket 大小进行分配（例如：上章节提到的 <code>makemap_small</code> 方法，就在初始化时没有初始 buckets，那么它在第一次赋值时就会对 buckets 分配）</li>
+</ul>
+
+<h4 id="第二阶段-寻找可插入位和更新既有值">第二阶段：寻找可插入位和更新既有值</h4>
+
+<pre><code class="language-go">...
+again:
+	bucket := hash &amp; bucketMask(h.B)
+	if h.growing() {
+		growWork(t, h, bucket)
+	}
+	b := (*bmap)(unsafe.Pointer(uintptr(h.buckets) + bucket*uintptr(t.bucketsize)))
+	top := tophash(hash)
+
+	var inserti *uint8
+	var insertk unsafe.Pointer
+	var val unsafe.Pointer
+	for {
+		for i := uintptr(0); i &lt; bucketCnt; i++ {
+			if b.tophash[i] != top {
+				if b.tophash[i] == empty &amp;&amp; inserti == nil {
+					inserti = &amp;b.tophash[i]
+					insertk = add(unsafe.Pointer(b), dataOffset+i*uintptr(t.keysize))
+					val = add(unsafe.Pointer(b), dataOffset+bucketCnt*uintptr(t.keysize)+i*uintptr(t.valuesize))
+				}
+				continue
+			}
+			k := add(unsafe.Pointer(b), dataOffset+i*uintptr(t.keysize))
+			if t.indirectkey {
+				k = *((*unsafe.Pointer)(k))
+			}
+			if !alg.equal(key, k) {
+				continue
+			}
+			// already have a mapping for key. Update it.
+			if t.needkeyupdate {
+				typedmemmove(t.key, k, key)
+			}
+			val = add(unsafe.Pointer(b), dataOffset+bucketCnt*uintptr(t.keysize)+i*uintptr(t.valuesize))
+			goto done
+		}
+		ovf := b.overflow(t)
+		if ovf == nil {
+			break
+		}
+		b = ovf
+	}
+
+	if !h.growing() &amp;&amp; (overLoadFactor(h.count+1, h.B) || tooManyOverflowBuckets(h.noverflow, h.B)) {
+		hashGrow(t, h)
+		goto again // Growing the table invalidates everything, so try again
+	}
+	...
+</code></pre>
+
+<ul>
+<li>根据低八位计算得到 bucket 的内存地址，并判断是否正在扩容，若正在扩容中则先迁移再接着处理</li>
+<li>计算并得到 bucket 的 bmap 指针地址，计算 key hash 高八位用于查找 Key</li>
+<li>迭代 buckets 中的每一个 bucket（共 8 个），对比 <code>bucket.tophash</code> 与 top（高八位）是否一致</li>
+<li>若不一致，判断是否为空槽。若是空槽（有两种情况，第一种是<strong>没有插入过</strong>。第二种是<strong>插入后被删除</strong>），则把该位置标识为可插入 tophash 位置。注意，这里就是第一个可以插入数据的地方</li>
+<li>若 key 与当前 k 不匹配则跳过。但若是匹配（也就是原本已经存在），则进行更新。最后跳出并返回 value 的内存地址</li>
+<li>判断是否迭代完毕，若是则结束迭代 buckets 并更新当前桶位置</li>
+<li>若满足三个条件：触发最大 <code>LoadFactor</code> 、存在过多溢出桶 <code>overflow buckets</code>、没有正在进行扩容。就会进行扩容动作（以确保后续的动作）</li>
+</ul>
+
+<p>总的来讲，这一块逻辑做了两件大事，第一是<strong>寻找空位，将位置其记录在案，用于后续的插入动作</strong>。第二是<strong>判断 Key 是否已经存在哈希表中，存在则进行更新</strong>。而若是第二种场景，更新完毕后就会进行收尾动作，第一种将继续执行下述的代码</p>
+
+<h4 id="第三阶段-申请新的插入位和插入新值">第三阶段：申请新的插入位和插入新值</h4>
+
+<pre><code class="language-go">    ...
+	if inserti == nil {
+		newb := h.newoverflow(t, b)
+		inserti = &amp;newb.tophash[0]
+		insertk = add(unsafe.Pointer(newb), dataOffset)
+		val = add(insertk, bucketCnt*uintptr(t.keysize))
+	}
+
+	if t.indirectkey {
+		kmem := newobject(t.key)
+		*(*unsafe.Pointer)(insertk) = kmem
+		insertk = kmem
+	}
+	if t.indirectvalue {
+		vmem := newobject(t.elem)
+		*(*unsafe.Pointer)(val) = vmem
+	}
+	typedmemmove(t.key, insertk, key)
+	*inserti = top
+	h.count++
+
+done:
+	...
+	return val
+
+</code></pre>
+
+<p>经过前面迭代寻找动作，若没有找到可插入的位置，意味着当前的所有桶都满了，将重新分配一个新溢出桶用于插入动作。最后再在上一步申请的新插入位置，存储键值对，返回该值的内存地址</p>
+
+<h4 id="第四阶段-写入">第四阶段：写入</h4>
+
+<p>但是这里又疑惑了？最后为什么是返回内存地址。这是因为隐藏的最后一步写入动作（将值拷贝到指定内存区域）是通过底层汇编配合来完成的，在 runtime 中只完成了绝大部分的动作</p>
+
+<pre><code class="language-go">func main() {
+	m := make(map[int32]int32)
+	m[0] = 6666666
+}
+</code></pre>
+
+<p>对应的汇编部分：</p>
+
+<pre><code>...
+0x0099 00153 (test.go:6)	CALL	runtime.mapassign_fast32(SB)
+0x009e 00158 (test.go:6)	PCDATA	$2, $2
+0x009e 00158 (test.go:6)	MOVQ	24(SP), AX
+0x00a3 00163 (test.go:6)	PCDATA	$2, $0
+0x00a3 00163 (test.go:6)	MOVL	$6666666, (AX)
+</code></pre>
+
+<p>这里分为了几个部位，主要是调用 <code>mapassign</code> 函数和拿到值存放的内存地址，再将 6666666 这个值存放进该内存地址中。另外我们看到 <code>PCDATA</code> 指令，主要是包含一些垃圾回收的信息，由编译器产生</p>
+
+<h3 id="小结">小结</h3>
+
+<p>通过前面几个阶段的分析，我们可梳理出一些要点。例如：</p>
+
+<ul>
+<li>不同类型对应哈希函数不一样</li>
+<li>高八位用于定位 bucket</li>
+<li>低八位用于定位 key，快速试错后再进行完整对比</li>
+<li>buckets/overflow buckets 遍历</li>
+<li>可插入位的处理</li>
+<li>最终写入动作与底层汇编的交互</li>
+</ul>
+
+<h2 id="扩容">扩容</h2>
+
+<p>在所有动作中，扩容规则是大家较关注的点，也是赋值里非常重要的一环。因此咱们将这节拉出来，对这块细节进行研讨</p>
+
+<h3 id="什么时候扩容">什么时候扩容</h3>
+
+<pre><code class="language-go">if !h.growing() &amp;&amp; (overLoadFactor(h.count+1, h.B) || tooManyOverflowBuckets(h.noverflow, h.B)) {
+	hashGrow(t, h)
+	goto again
+}
+</code></pre>
+
+<p>在特定条件的情况下且当前没有正在进行扩容动作（以判断 <code>hmap.oldbuckets != nil</code> 为基准）。哈希表在赋值、删除的动作下会触发扩容行为，条件如下：</p>
+
+<ul>
+<li>触发 <code>load factor</code> 的最大值，负载因子已达到当前界限</li>
+<li>溢出桶 <code>overflow buckets</code> 过多</li>
+</ul>
+
+<h3 id="什么时候受影响">什么时候受影响</h3>
+
+<p>那么什么情况下会对这两个 “值” 有影响呢？如下：</p>
+
+<ol>
+<li>负载因子 <code>load factor</code>，用途是评估哈希表当前的时间复杂度，其与哈希表当前包含的键值对数、桶数量等相关。如果负载因子越大，则说明空间使用率越高，但产生哈希冲突的可能性更高。而负载因子越小，说明空间使用率低，产生哈希冲突的可能性更低</li>
+<li>溢出桶 <code>overflow buckets</code> 的判定与 buckets 总数和 overflow buckets 总数相关联</li>
+</ol>
+
+<h3 id="因子关系">因子关系</h3>
+
+<table>
+<thead>
+<tr>
+<th>loadFactor</th>
+<th>%overflow</th>
+<th>bytes/entry</th>
+<th>hitprobe</th>
+<th>missprobe</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>4.00</td>
+<td>2.13</td>
+<td>20.77</td>
+<td>3.00</td>
+<td>4.00</td>
+</tr>
+
+<tr>
+<td>4.50</td>
+<td>4.05</td>
+<td>17.30</td>
+<td>3.25</td>
+<td>4.50</td>
+</tr>
+
+<tr>
+<td>5.00</td>
+<td>6.85</td>
+<td>14.77</td>
+<td>3.50</td>
+<td>5.00</td>
+</tr>
+
+<tr>
+<td>5.50</td>
+<td>10.55</td>
+<td>12.94</td>
+<td>3.75</td>
+<td>5.50</td>
+</tr>
+
+<tr>
+<td>6.00</td>
+<td>15.27</td>
+<td>11.67</td>
+<td>4.00</td>
+<td>6.00</td>
+</tr>
+
+<tr>
+<td>6.50</td>
+<td>20.90</td>
+<td>10.79</td>
+<td>4.25</td>
+<td>6.50</td>
+</tr>
+
+<tr>
+<td>7.00</td>
+<td>27.14</td>
+<td>10.15</td>
+<td>4.50</td>
+<td>7.00</td>
+</tr>
+</tbody>
+</table>
+
+<ul>
+<li>loadFactor：负载因子</li>
+<li>%overflow：溢出率，具有溢出桶 <code>overflow buckets</code> 的桶的百分比</li>
+<li>bytes/entry：每个键值对所的字节数开销</li>
+<li>hitprobe：查找存在的 key 时，平均需要检索的条目数量</li>
+<li>missprobe：查找不存在的 key 时，平均需要检索的条目数量</li>
+</ul>
+
+<p>这一组数据能够体现出不同的负载因子会给哈希表的动作带来怎么样的影响。而在上一章节我们有提到默认的负载因子是 6.5 (loadFactorNum/loadFactorDen)，可以看出来是经过测试后取出的一个比较合理的因子。能够较好的影响哈希表的扩容动作的时机</p>
+
+<h3 id="源码剖析">源码剖析</h3>
+
+<pre><code class="language-go">func hashGrow(t *maptype, h *hmap) {
+	bigger := uint8(1)
+	if !overLoadFactor(h.count+1, h.B) {
+		bigger = 0
+		h.flags |= sameSizeGrow
+	}
+	oldbuckets := h.buckets
+	newbuckets, nextOverflow := makeBucketArray(t, h.B+bigger, nil)
+    ...
+	h.oldbuckets = oldbuckets
+	h.buckets = newbuckets
+	h.nevacuate = 0
+	h.noverflow = 0
+
+	if h.extra != nil &amp;&amp; h.extra.overflow != nil {
+		if h.extra.oldoverflow != nil {
+			throw(&quot;oldoverflow is not nil&quot;)
+		}
+		h.extra.oldoverflow = h.extra.overflow
+		h.extra.overflow = nil
+	}
+	if nextOverflow != nil {
+		if h.extra == nil {
+			h.extra = new(mapextra)
+		}
+		h.extra.nextOverflow = nextOverflow
+	}
+
+	// the actual copying of the hash table data is done incrementally
+	// by growWork() and evacuate().
+}
+</code></pre>
+
+<h4 id="第一阶段-确定扩容容量规则">第一阶段：确定扩容容量规则</h4>
+
+<p>在上小节有讲到扩容的依据有两种，在 <code>hashGrow</code> 开头就进行了划分。如下：</p>
+
+<pre><code class="language-go">if !overLoadFactor(h.count+1, h.B) {
+	bigger = 0
+	h.flags |= sameSizeGrow
+}
+</code></pre>
+
+<p>若不是负载因子 <code>load factor</code> 超过当前界限，也就是属于溢出桶 <code>overflow buckets</code> 过多的情况。因此本次扩容规则将是 <code>sameSizeGrow</code>，即是<strong>不改变大小的扩容动作</strong>。那要是前者的情况呢？</p>
+
+<pre><code class="language-go">bigger := uint8(1)
+...
+newbuckets, nextOverflow := makeBucketArray(t, h.B+bigger, nil)
+</code></pre>
+
+<p>结合代码分析可得出，若是负载因子 <code>load factor</code> 达到当前界限，将会动态扩容<strong>当前大小的两倍</strong>作为其新容量大小</p>
+
+<h4 id="第二阶段-初始化-交换新旧-桶-溢出桶">第二阶段：初始化、交换新旧 桶/溢出桶</h4>
+
+<p>主要是针对扩容的相关数据<strong>前置处理</strong>，涉及 buckets/oldbuckets、overflow/oldoverflow 之类与存储相关的字段</p>
+
+<pre><code class="language-go">...
+oldbuckets := h.buckets
+newbuckets, nextOverflow := makeBucketArray(t, h.B+bigger, nil)
+
+flags := h.flags &amp;^ (iterator | oldIterator)
+if h.flags&amp;iterator != 0 {
+	flags |= oldIterator
+}
+
+h.B += bigger
+...
+h.noverflow = 0
+
+if h.extra != nil &amp;&amp; h.extra.overflow != nil {
+	...
+	h.extra.oldoverflow = h.extra.overflow
+	h.extra.overflow = nil
+}
+if nextOverflow != nil {
+	...
+	h.extra.nextOverflow = nextOverflow
+}
+</code></pre>
+
+<p>这里注意到这段代码： <code>newbuckets, nextOverflow := makeBucketArray(t, h.B+bigger, nil)</code>。第一反应是扩容的时候就马上申请并初始化内存了吗？假设涉及大量的内存分配，那挺耗费性能的&hellip;</p>
+
+<p>然而并不，内部只会先进行预分配，当使用的时候才会真正的去初始化</p>
+
+<h4 id="第三阶段-扩容">第三阶段：扩容</h4>
+
+<p>在源码中，发现第三阶段的流转并没有显式展示。这是因为流转由底层去做控制了。但通过分析代码和注释，可得知由第三阶段涉及 <code>growWork</code> 和 <code>evacuate</code> 方法。如下：</p>
+
+<pre><code class="language-go">func growWork(t *maptype, h *hmap, bucket uintptr) {
+	evacuate(t, h, bucket&amp;h.oldbucketmask())
+
+	if h.growing() {
+		evacuate(t, h, h.nevacuate)
+	}
+}
+</code></pre>
+
+<p>在该方法中，主要是两个 <code>evacuate</code> 函数的调用。他们在调用上又分别有什么区别呢？如下：</p>
+
+<ul>
+<li>evacuate(t, h, bucket&amp;h.oldbucketmask()): 将 oldbucket 中的元素迁移 rehash 到扩容后的新 bucket</li>
+<li>evacuate(t, h, h.nevacuate): 如果当前正在进行扩容，则再进行多一次迁移</li>
+</ul>
+
+<p>另外，在执行扩容动作的时候，可以发现都是以 bucket/oldbucket 为单位的，而不是传统的 buckets/oldbuckets。再结合代码分析，可得知在 Go map 中<strong>扩容是采取增量扩容的方式，并非一步到位</strong></p>
+
+<h5 id="为什么是增量扩容">为什么是增量扩容？</h5>
+
+<p>如果是全量扩容的话，那问题就来了。假设当前 hmap 的容量比较大，直接全量扩容的话，就会导致扩容要花费大量的时间和内存，导致系统卡顿，最直观的表现就是慢。显然，不能这么做</p>
+
+<p>而增量扩容，就可以解决这个问题。它通过每一次的 map 操作行为去分摊总的一次性动作。因此有了 buckets/oldbuckets 的设计，它是逐步完成的，并且会在扩容完毕后才进行清空</p>
+
+<h3 id="小结-1">小结</h3>
+
+<p>通过前面三个阶段的分析，可以得知扩容的大致过程。我们阶段性总结一下。主要如下：</p>
+
+<ul>
+<li>根据需扩容的原因不同（overLoadFactor/tooManyOverflowBuckets），分为两类容量规则方向，为等量扩容（不改变原有大小）或双倍扩容</li>
+<li>新申请的扩容空间（newbuckets/newoverflow）都是预分配，等真正使用的时候才会初始化</li>
+<li>扩容完毕后（预分配），不会马上就进行迁移。而是采取<strong>增量扩容</strong>的方式，当有访问到具体 bukcet 时，才会逐渐的进行迁移（将 oldbucket 迁移到 bucket）</li>
+</ul>
+
+<p>这时候又想到，既然迁移是逐步进行的。那如果在途中又要扩容了，怎么办？</p>
+
+<pre><code class="language-go">again:
+	bucket := hash &amp; bucketMask(h.B)
+    ...
+	if !h.growing() &amp;&amp; (overLoadFactor(h.count+1, h.B) || tooManyOverflowBuckets(h.noverflow, h.B)) {
+		hashGrow(t, h)
+		goto again
+	}
+</code></pre>
+
+<p>在这里注意到 <code>goto again</code> 语句，结合上下文可得若正在进行扩容，就会不断地进行迁移。待迁移完毕后才会开始进行下一次的扩容动作</p>
+
+<h2 id="迁移">迁移</h2>
+
+<p>在扩容的完整闭环中，包含着迁移的动作，又称 “搬迁”。因此我们继续深入研究 <code>evacuate</code> 函数。接下来一起打开迁移世界的大门。如下：</p>
+
+<pre><code class="language-go">type evacDst struct {
+	b *bmap
+	i int
+	k unsafe.Pointer
+	v unsafe.Pointer
+}
+</code></pre>
+
+<p><code>evacDst</code> 是迁移中的基础数据结构，其包含如下字段：</p>
+
+<ul>
+<li>b: 当前目标桶</li>
+<li>i: 当前目标桶存储的键值对数量</li>
+<li>k: 指向当前 key 的内存地址</li>
+
+<li><p>v: 指向当前 value 的内存地址</p>
+
+<pre><code class="language-go">func evacuate(t *maptype, h *hmap, oldbucket uintptr) {
+	b := (*bmap)(add(h.oldbuckets, oldbucket*uintptr(t.bucketsize)))
+	newbit := h.noldbuckets()
+	if !evacuated(b) {
+		var xy [2]evacDst
+		x := &amp;xy[0]
+		x.b = (*bmap)(add(h.buckets, oldbucket*uintptr(t.bucketsize)))
+		x.k = add(unsafe.Pointer(x.b), dataOffset)
+		x.v = add(x.k, bucketCnt*uintptr(t.keysize))
+
+		if !h.sameSizeGrow() {
+			y := &amp;xy[1]
+			y.b = (*bmap)(add(h.buckets, (oldbucket+newbit)*uintptr(t.bucketsize)))
+			y.k = add(unsafe.Pointer(y.b), dataOffset)
+			y.v = add(y.k, bucketCnt*uintptr(t.keysize))
+		}
+
+		for ; b != nil; b = b.overflow(t) {
+        ...
+		}
+
+		if h.flags&amp;oldIterator == 0 &amp;&amp; t.bucket.kind&amp;kindNoPointers == 0 {
+			b := add(h.oldbuckets, oldbucket*uintptr(t.bucketsize))
+			ptr := add(b, dataOffset)
+			n := uintptr(t.bucketsize) - dataOffset
+			memclrHasPointers(ptr, n)
+		}
+	}
+
+	if oldbucket == h.nevacuate {
+		advanceEvacuationMark(h, t, newbit)
+	}
+}
+</code></pre></li>
+
+<li><p>计算并得到 oldbucket 的 bmap 指针地址</p></li>
+
+<li><p>计算 hmap 在增长之前的桶数量</p></li>
+
+<li><p>判断当前的迁移（搬迁）状态，以便流转后续的操作。若没有正在进行迁移 <code>!evacuated(b)</code> ，则根据扩容的规则的不同，当规则为等量扩容 <code>sameSizeGrow</code> 时，只使用一个 <code>evacDst</code> 桶用于分流。而为双倍扩容时，就会使用两个 <code>evacDst</code> 进行分流操作</p></li>
+
+<li><p>当分流完毕后，需要迁移的数据都会通过 <code>typedmemmove</code> 函数迁移到指定的目标桶上</p></li>
+
+<li><p>若当前不存在 flags 使用标志、使用 oldbucket 迭代器、bucket 不为指针类型。则取消链接溢出桶、清除键值</p></li>
+
+<li><p>在最后 <code>advanceEvacuationMark</code> 函数中会对迁移进度 <code>hmap.nevacuate</code> 进行累积计数，并调用 <code>bucketEvacuated</code> 对旧桶 oldbuckets 进行不断的迁移。直至全部迁移完毕。那么也就表示扩容完毕了，会对 <code>hmap.oldbuckets</code> 和 <code>h.extra.oldoverflow</code> 进行清空</p></li>
+</ul>
+
+<p>总的来讲，就是计算得到所需数据的位置。再根据当前的迁移状态、扩容规则进行数据分流迁移。结束后进行清理，促进 GC 的回收</p>
+
+<h2 id="总结">总结</h2>
+
+<p>在本章节我们主要研讨了 Go map 的几个核心动作，分别是：“赋值、扩容、迁移” 。而通过本次的阅读，我们能够更进一步的认识到一些要点，例如：</p>
+
+<ul>
+<li>赋值的时候会触发扩容吗？</li>
+<li>负载因子是什么？过高会带来什么问题？它的变动会对哈希表操作带来什么影响吗？</li>
+<li>溢出桶越多会带来什么问题？</li>
+<li>是否要扩容的基准条件是什么？</li>
+<li>扩容的容量规则是怎么样的？</li>
+<li>扩容的步骤是怎么样的？涉及到了哪些数据结构？</li>
+<li>扩容是一次性扩容还是增量扩容？</li>
+<li>正在扩容的时候又要扩容怎么办？</li>
+<li>扩容时的迁移分流动作是怎么样的？</li>
+<li>在扩容动作中，底层汇编承担了什么角色？做了什么事？</li>
+<li>在 buckets/overflow buckets 中寻找时，是如何 “快速” 定位值的？低八位、高八位的用途？</li>
+<li>空槽有可能出现在任意位置吗？假设已经没有空槽了，但是又有新值要插入，底层会怎么处理</li>
+</ul>
+
+<p>最后希望你通过本文的阅读，能更清楚地了解到 Go map 是怎么样运作的 ：）</p>
+
+        </div>
+
+        
+<div class="post-archive">
+    <ul class="post-copyright">
+        <li><strong>原文作者：</strong><a rel="author" href="https://go.zshipu.com/">知识铺</a></li>
+        <li style="word-break:break-all"><strong>原文链接：</strong><a href="https://go.zshipu.com/posts/go/map/2019-03-24-map-assign/">https://go.zshipu.com/posts/go/map/2019-03-24-map-assign/</a></li>
+        <li><strong>版权声明：</strong>本作品采用<a rel="license" href="https://creativecommons.org/licenses/by-nc-nd/4.0/">知识共享署名-非商业性使用-禁止演绎 4.0 国际许可协议</a>进行许可，非商业转载请注明出处（作者，原文链接），商业转载请联系作者获得授权。</li>
+        <li><strong>免责声明：</strong>本页面内容均来源于站内编辑发布，部分信息来源互联网，并不意味着本站赞同其观点或者证实其内容的真实性，如涉及版权等问题，请立即联系客服进行更改或删除，保证您的合法权益。转载请注明来源，欢迎对文章中的引用来源进行考证，欢迎指出任何有错误或不够清晰的表达。也可以邮件至 sblig@126.com</li>
+    </ul>
+</div>
+<br/>
+
+
+
+        
+
+<div class="post-archive">
+    <h2>See Also</h2>
+    <ul class="listing">
+        
+        <li><a href="/posts/go/map/2019-03-05-map-access/">深入理解 Go map：初始化和访问元素</a></li>
+        
+        <li><a href="/posts/go/slice/2019-01-06-why-slice-max/">Go Slice 最大容量大小是怎么来的</a></li>
+        
+        <li><a href="/posts/go/pkg/2018-12-15-unsafe/">有点不安全却又一亮的 Go unsafe.Pointer</a></li>
+        
+        <li><a href="/posts/go/slice/2018-12-11-slice/">深入理解 Go Slice</a></li>
+        
+        <li><a href="/posts/go/pkg/2018-12-04-fmt/">fmt 标准库 --- Print* 是怎么样输出的？</a></li>
+        
+    </ul>
+</div>
+
+
+        <div class="post-meta meta-tags">
+            
+            <ul class="clearfix">
+                
+                <li><a href='/tags/go'>go</a></li>
+                
+                <li><a href='/tags/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90'>源码分析</a></li>
+                
+            </ul>
+            
+        </div>
+    </article>
+    
+    
+
+    
+    
+    <div class="post bg-white">
+      <script src="https://utteranc.es/client.js"
+            repo= "zshipu/zshipu-go"
+            issue-term="pathname"
+            theme="github-light"
+            crossorigin="anonymous"
+            async>
+      </script>
+    </div>
+    
+</div>
+
+                    <footer id="footer">
+    <div>
+        &copy; 2021 <a href="https://go.zshipu.com/">知识铺的博客 By 知识铺</a>
+        
+        | <a rel="nofollow" target="_blank" href="https://beian.miit.gov.cn/">浙 ICP 备19032823号-1</a>
+        
+    </div>
+    <br />
+    <div>
+        <div class="github-badge">
+            <a href="https://gohugo.io/" target="_black" rel="nofollow"><span class="badge-subject">Powered by</span><span class="badge-value bg-blue">Hugo</span></a>
+        </div>
+        <div class="github-badge">
+            <a href="https://www.flysnow.org/" target="_black"><span class="badge-subject">Design by</span><span class="badge-value bg-brightgreen">飞雪无情</span></a>
+        </div>
+        <div class="github-badge">
+            <a href="https://github.com/flysnow-org/maupassant-hugo" target="_black"><span class="badge-subject">Theme</span><span class="badge-value bg-yellowgreen">Maupassant</span></a>
+        </div>
+    </div>
+</footer>
+
+
+    
+    <script type="text/javascript">
+        window.MathJax = {
+            tex2jax: {
+                inlineMath: [['$', '$']],
+                processEscapes: true
+                }
+            };
+    </script>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
+
+<a id="rocket" href="#top"></a>
+<script type="text/javascript" src='/js/totop.js?v=0.0.0' async=""></script>
+
+
+
+    <script type="text/javascript" src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" async></script>
+
+
+
+
+                </div>
+
+                <div id="secondary">
+    <section class="widget">
+        <form id="search" action='https://go.zshipu.com/search/' method="get" accept-charset="utf-8" target="_blank" _lpchecked="1">
+      
+      <input type="text" name="q" maxlength="20" placeholder="Search">
+      <input type="hidden" name="sitesearch" value="https://go.zshipu.com/">
+      <button type="submit" class="submit icon-search"></button>
+</form>
+    </section>
+    
+    <section class="widget">
+        <h3 class="widget-title">最近文章</h3>
+<ul class="widget-list">
+    
+    <li>
+        <a href="https://go.zshipu.com/posts/go/go1.16-3/" title="Go1.16 新特性：详解内存管理机制的变更，你需要了解">Go1.16 新特性：详解内存管理机制的变更，你需要了解</a>
+    </li>
+    
+    <li>
+        <a href="https://go.zshipu.com/posts/go/go1.16-2/" title="Go1.16 新特性：快速上手 Go embed">Go1.16 新特性：快速上手 Go embed</a>
+    </li>
+    
+    <li>
+        <a href="https://go.zshipu.com/posts/go/go1.16-1/" title="Go1.16 即将正式发布，以下变更你需要知道">Go1.16 即将正式发布，以下变更你需要知道</a>
+    </li>
+    
+    <li>
+        <a href="https://go.zshipu.com/posts/go/generics-proposal/" title="快报：正式提案将泛型特性加入 Go 语言">快报：正式提案将泛型特性加入 Go 语言</a>
+    </li>
+    
+    <li>
+        <a href="https://go.zshipu.com/posts/2021-ecug/" title="推荐一个牛逼的技术社区！">推荐一个牛逼的技术社区！</a>
+    </li>
+    
+    <li>
+        <a href="https://go.zshipu.com/posts/2020-top100/" title="吐血整理 | 快速了解全球软件案例（Top100）">吐血整理 | 快速了解全球软件案例（Top100）</a>
+    </li>
+    
+    <li>
+        <a href="https://go.zshipu.com/posts/go/go-error2panic/" title="Go 错误处理：用 panic 取代 err != nil 的模式">Go 错误处理：用 panic 取代 err != nil 的模式</a>
+    </li>
+    
+    <li>
+        <a href="https://go.zshipu.com/posts/go/go-concurrent-lock/" title="Go 并发：一些有趣的现象和要避开的 “坑”">Go 并发：一些有趣的现象和要避开的 “坑”</a>
+    </li>
+    
+    <li>
+        <a href="https://go.zshipu.com/posts/go/go2-errors/" title="先睹为快，Go2 Error 的挣扎之路">先睹为快，Go2 Error 的挣扎之路</a>
+    </li>
+    
+    <li>
+        <a href="https://go.zshipu.com/posts/go/gophercon2020-errors/" title="重磅：Go errors 将不会有任何进一步的改进计划">重磅：Go errors 将不会有任何进一步的改进计划</a>
+    </li>
+    
+</ul>
+    </section>
+
+    
+<section class="widget">
+    <h3 class="widget-title" style="color:red">福利派送</h3>
+    <ul class="widget-list">
+        
+        <li>
+            <a href="https://promotion.aliyun.com/ntms/yunparter/invite.html?source=5176.11533457&amp;userCode=tzm8r4hc" title="【2019双12】ALL IN CLoud 低至1折" target="_blank" style="color:red">
+                
+                    <img src="https://img.alicdn.com/tfs/TB1_rYHo7P2gK0jSZPxXXacQpXa-690-388.jpg">
+                
+            </a>
+        </li>
+        
+        <li>
+            <a href="https://promotion.aliyun.com/ntms/yunparter/invite.html?source=5176.11533457&amp;userCode=tzm8r4hc" title="助力产业智慧升级，云服务器首年88元起，更有千元代金券礼包免费领！" target="_blank" style="color:red">
+                
+                    <img src="https://upload-dianshi-1255598498.file.myqcloud.com/345-7c71532bd4935fbdd9a67c1a71e577b1767b805c.200%E7%89%88%E6%9C%ACB.jpg">
+                
+            </a>
+        </li>
+        
+        <li>
+            <a href="https://promotion.aliyun.com/ntms/yunparter/invite.html?source=5176.11533457&amp;userCode=tzm8r4hc" title="【渠道专享低折扣】11月特惠 限时2折" target="_blank" style="color:red">
+                
+                    <img src="https://img.alicdn.com/tfs/TB1hblJl7Y2gK0jSZFgXXc5OFXa-750-400.jpg">
+                
+            </a>
+        </li>
+        
+    </ul>
+</section>
+
+
+    <section class="widget">
+        <h3 class="widget-title"><a href='/categories/'>分类</a></h3>
+<ul class="widget-list">
+    
+</ul>
+    </section>
+
+    <section class="widget">
+        <h3 class="widget-title"><a href='/tags/'>标签</a></h3>
+<div class="tagcloud">
+    
+    <a href="https://go.zshipu.com/tags/ecug/">ecug</a>
+    
+    <a href="https://go.zshipu.com/tags/gin/">gin</a>
+    
+    <a href="https://go.zshipu.com/tags/go/">go</a>
+    
+    <a href="https://go.zshipu.com/tags/go-modules/">go-modules</a>
+    
+    <a href="https://go.zshipu.com/tags/grpc/">grpc</a>
+    
+    <a href="https://go.zshipu.com/tags/grpc-gateway/">grpc-gateway</a>
+    
+    <a href="https://go.zshipu.com/tags/kubernetes/">kubernetes</a>
+    
+    <a href="https://go.zshipu.com/tags/prometheus/">prometheus</a>
+    
+    <a href="https://go.zshipu.com/tags/protobuf/">protobuf</a>
+    
+    <a href="https://go.zshipu.com/tags/top100/">top100</a>
+    
+    <a href="https://go.zshipu.com/tags/untagged/">untagged</a>
+    
+    <a href="https://go.zshipu.com/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/">微服务</a>
+    
+    <a href="https://go.zshipu.com/tags/%E6%95%B0%E6%8D%AE%E5%88%86%E6%9E%90/">数据分析</a>
+    
+    <a href="https://go.zshipu.com/tags/%E6%9C%8D%E5%8A%A1%E6%B2%BB%E7%90%86/">服务治理</a>
+    
+    <a href="https://go.zshipu.com/tags/%E6%B3%9B%E5%9E%8B/">泛型</a>
+    
+    <a href="https://go.zshipu.com/tags/%E6%B7%B1%E5%BA%A6%E8%A7%A3%E5%AF%86/">深度解密</a>
+    
+    <a href="https://go.zshipu.com/tags/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/">源码分析</a>
+    
+    <a href="https://go.zshipu.com/tags/%E7%A8%8B%E5%BA%8F%E5%91%98%E7%9A%84%E8%87%AA%E6%88%91%E4%BF%AE%E5%85%BB/">程序员的自我修养</a>
+    
+</div>
+    </section>
+
+    
+<section class="widget">
+    <h3 class="widget-title">友情链接</h3>
+    <ul class="widget-list">
+        
+        <li>
+            <a target="_blank" href="https://blog.zshipu.com//" title="知识铺的博客">知识铺的博客</a>
+        </li>
+        
+    </ul>
+</section>
+
+
+    <section class="widget">
+        <h3 class="widget-title">其它</h3>
+        <ul class="widget-list">
+            <li><a href="https://go.zshipu.com/index.xml">文章 RSS</a></li>
+        </ul>
+    </section>
+</div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,1087 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>「连载四」Gin搭建Blog API&#39;s （三） | 知识铺的博客</title>
+    <meta property="og:title" content="「连载四」Gin搭建Blog API&#39;s （三） - 知识铺的博客">
+    <meta property="og:type" content="article">
+        
+    <meta property="article:published_time" content='2018-02-13T12:00:00&#43;08:00'>
+        
+        
+    <meta property="article:modified_time" content='2018-02-13T12:00:00&#43;08:00'>
+        
+    <meta name="Keywords" content="golang,go语言,go语言笔记,知识铺,java,android,博客,项目管理,python,软件架构,公众号,小程序">
+    <meta name="description" content="「连载四」Gin搭建Blog API&#39;s （三）">
+        <meta name="author" content="知识铺">
+        
+    <meta property="og:url" content="https://go.zshipu.com/posts/go/gin/2018-02-13-api-03/">
+    <link rel="shortcut icon" href='/favicon.ico'  type="image/x-icon">
+
+    <link rel="stylesheet" href='/css/normalize.css'>
+    <link rel="stylesheet" href='/css/style.css'>
+    <script type="text/javascript" src="//cdn.bootcdn.net/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+    
+    <script data-ad-client="ca-pub-2874221941555456" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+    
+    
+    
+    
+    
+    
+    
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-WLWJSST');</script>
+    
+</head>
+
+
+<body>
+
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-WLWJSST"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+
+    <header id="header" class="clearfix">
+    <div class="container">
+        <div class="col-group">
+            <div class="site-name ">
+                
+                    <a id="logo" href="https://go.zshipu.com/">
+                        知识铺的博客
+                    </a>
+                
+                <p class="description">专注于Android、Java、Go语言(golang)、移动互联网、项目管理、软件架构</p>
+            </div>
+            <div>
+                <nav id="nav-menu" class="clearfix">
+                    <a class="" href="https://go.zshipu.com/">首页</a>
+                    
+                    <a  href="https://go.zshipu.com/archives/" title="归档">归档</a>
+                    
+                    <a  href="https://go.zshipu.com/about/" title="关于">关于</a>
+                    
+                </nav>
+            </div>
+        </div>
+    </div>
+</header>
+
+    <div id="body">
+        <div class="container">
+            <div class="col-group">
+
+                <div class="col-8" id="main">
+                    
+<div class="res-cons">
+    <style type="text/css">
+    .post-toc {
+        position: fixed;
+        width: 200px;
+        margin-left: -210px;
+        padding: 5px 10px;
+        font-family: Athelas, STHeiti, Microsoft Yahei, serif;
+        font-size: 12px;
+        border: 1px solid rgba(0, 0, 0, .07);
+        border-radius: 5px;
+        background-color: rgba(255, 255, 255, 0.98);
+        background-clip: padding-box;
+        -webkit-box-shadow: 1px 1px 2px rgba(0, 0, 0, .125);
+        box-shadow: 1px 1px 2px rgba(0, 0, 0, .125);
+        word-wrap: break-word;
+        white-space: nowrap;
+        -webkit-box-sizing: border-box;
+        box-sizing: border-box;
+        z-index: 999;
+        cursor: pointer;
+        max-height: 70%;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    .post-toc .post-toc-title {
+        width: 100%;
+        margin: 0 auto;
+        font-size: 20px;
+        font-weight: 400;
+        text-transform: uppercase;
+        text-align: center;
+    }
+
+    .post-toc .post-toc-content {
+        font-size: 15px;
+    }
+
+    .post-toc .post-toc-content>nav>ul {
+        margin: 10px 0;
+    }
+
+    .post-toc .post-toc-content ul {
+        padding-left: 20px;
+        list-style: square;
+        margin: 0.5em;
+        line-height: 1.8em;
+    }
+
+    .post-toc .post-toc-content ul ul {
+        padding-left: 15px;
+        display: none;
+    }
+
+    @media print,
+    screen and (max-width:1057px) {
+        .post-toc {
+            display: none;
+        }
+    }
+</style>
+<div class="post-toc" style="position: absolute; top: 188px;">
+    <h2 class="post-toc-title">文章目录</h2>
+    <div class="post-toc-content">
+        <nav id="TableOfContents">
+<ul>
+<li>
+<ul>
+<li><a href="#涉及知识点">涉及知识点</a></li>
+<li><a href="#本文目标">本文目标</a></li>
+<li><a href="#定义接口">定义接口</a></li>
+<li><a href="#编写路由逻辑">编写路由逻辑</a></li>
+<li><a href="#验证功能">验证功能</a></li>
+</ul></li>
+</ul>
+</nav>
+    </div>
+</div>
+<script type="text/javascript">
+    $(document).ready(function () {
+        var postToc = $(".post-toc");
+        if (postToc.length) {
+            var leftPos = $("#main").offset().left;
+            if(leftPos<220){
+                postToc.css({"width":leftPos-10,"margin-left":(0-leftPos)})
+            }
+
+            var t = postToc.offset().top - 20,
+                a = {
+                    start: {
+                        position: "absolute",
+                        top: t
+                    },
+                    process: {
+                        position: "fixed",
+                        top: 20
+                    },
+                };
+            $(window).scroll(function () {
+                var e = $(window).scrollTop();
+                e < t ? postToc.css(a.start) : postToc.css(a.process)
+            })
+        }
+    })
+</script>
+    <article class="post">
+        <header>
+            <h1 class="post-title">「连载四」Gin搭建Blog API&#39;s （三）</h1>
+        </header>
+        <date class="post-meta meta-date">
+            2018年2月13日
+        </date>
+        
+        
+        <div class="post-meta">
+            <span id="busuanzi_container_page_pv">|<span id="busuanzi_value_page_pv"></span><span>
+                    阅读</span></span>
+        </div>
+        
+        
+        <div class="clear" style="display: none">
+            <div class="toc-article">
+                <div class="toc-title">文章目录</div>
+            </div>
+        </div>
+        
+        <div class="post-content">
+            
+
+<h2 id="涉及知识点">涉及知识点</h2>
+
+<ul>
+<li><a href="https://github.com/gin-gonic/gin">Gin</a>：Golang 的一个微框架，性能极佳。</li>
+<li><a href="https://github.com/astaxie/beego/tree/master/validation">beego-validation</a>：本节采用的 beego 的表单验证库，<a href="https://beego.me/docs/mvc/controller/validation.md">中文文档</a>。</li>
+<li><a href="https://github.com/jinzhu/gorm">gorm</a>，对开发人员友好的 ORM 框架，<a href="http://gorm.io/docs/">英文文档</a></li>
+<li><a href="https://github.com/Unknwon/com">com</a>，一个小而美的工具包。</li>
+</ul>
+
+<h2 id="本文目标">本文目标</h2>
+
+<ul>
+<li>完成博客的文章类接口定义和编写</li>
+</ul>
+
+<h2 id="定义接口">定义接口</h2>
+
+<p>本节编写文章的逻辑，我们定义一下接口吧！</p>
+
+<ul>
+<li>获取文章列表：GET(&ldquo;/articles&rdquo;)</li>
+<li>获取指定文章：POST(&ldquo;/articles/:id&rdquo;)</li>
+<li>新建文章：POST(&ldquo;/articles&rdquo;)</li>
+<li>更新指定文章：PUT(&ldquo;/articles/:id&rdquo;)</li>
+<li>删除指定文章：DELETE(&ldquo;/articles/:id&rdquo;)</li>
+</ul>
+
+<h2 id="编写路由逻辑">编写路由逻辑</h2>
+
+<p>在<code>routers</code>的 v1 版本下，新建<code>article.go</code>文件，写入内容：</p>
+
+<pre><code class="language-go">package v1
+
+import (
+    &quot;github.com/gin-gonic/gin&quot;
+)
+
+//获取单个文章
+func GetArticle(c *gin.Context) {
+}
+
+//获取多个文章
+func GetArticles(c *gin.Context) {
+}
+
+//新增文章
+func AddArticle(c *gin.Context) {
+}
+
+//修改文章
+func EditArticle(c *gin.Context) {
+}
+
+//删除文章
+func DeleteArticle(c *gin.Context) {
+}
+</code></pre>
+
+<p>我们打开<code>routers</code>下的<code>router.go</code>文件，修改文件内容为：</p>
+
+<pre><code class="language-go">package routers
+
+import (
+    &quot;github.com/gin-gonic/gin&quot;
+
+    &quot;github.com/zshipu/go-gin-example/routers/api/v1&quot;
+    &quot;github.com/zshipu/go-gin-example/pkg/setting&quot;
+)
+
+func InitRouter() *gin.Engine {
+    ...
+    apiv1 := r.Group(&quot;/api/v1&quot;)
+    {
+        ...
+        //获取文章列表
+        apiv1.GET(&quot;/articles&quot;, v1.GetArticles)
+        //获取指定文章
+        apiv1.GET(&quot;/articles/:id&quot;, v1.GetArticle)
+        //新建文章
+        apiv1.POST(&quot;/articles&quot;, v1.AddArticle)
+        //更新指定文章
+        apiv1.PUT(&quot;/articles/:id&quot;, v1.EditArticle)
+        //删除指定文章
+        apiv1.DELETE(&quot;/articles/:id&quot;, v1.DeleteArticle)
+    }
+
+    return r
+}
+</code></pre>
+
+<p>当前目录结构：</p>
+
+<pre><code>go-gin-example/
+├── conf
+│   └── app.ini
+├── main.go
+├── middleware
+├── models
+│   ├── models.go
+│   └── tag.go
+├── pkg
+│   ├── e
+│   │   ├── code.go
+│   │   └── msg.go
+│   ├── setting
+│   │   └── setting.go
+│   └── util
+│       └── pagination.go
+├── routers
+│   ├── api
+│   │   └── v1
+│   │       ├── article.go
+│   │       └── tag.go
+│   └── router.go
+├── runtime
+
+</code></pre>
+
+<p>在基础的路由规则配置结束后，我们<strong>开始编写我们的接口</strong>吧！</p>
+
+<hr />
+
+<p>##编写 models 逻辑
+创建<code>models</code>目录下的<code>article.go</code>，写入文件内容：</p>
+
+<pre><code class="language-go">package models
+
+import (
+    &quot;github.com/jinzhu/gorm&quot;
+
+    &quot;time&quot;
+)
+
+type Article struct {
+    Model
+
+    TagID int `json:&quot;tag_id&quot; gorm:&quot;index&quot;`
+    Tag   Tag `json:&quot;tag&quot;`
+
+    Title string `json:&quot;title&quot;`
+    Desc string `json:&quot;desc&quot;`
+    Content string `json:&quot;content&quot;`
+    CreatedBy string `json:&quot;created_by&quot;`
+    ModifiedBy string `json:&quot;modified_by&quot;`
+    State int `json:&quot;state&quot;`
+}
+
+
+func (article *Article) BeforeCreate(scope *gorm.Scope) error {
+    scope.SetColumn(&quot;CreatedOn&quot;, time.Now().Unix())
+
+    return nil
+}
+
+func (article *Article) BeforeUpdate(scope *gorm.Scope) error {
+    scope.SetColumn(&quot;ModifiedOn&quot;, time.Now().Unix())
+
+    return nil
+}
+</code></pre>
+
+<p>我们创建了一个<code>Article struct {}</code>，与<code>Tag</code>不同的是，<code>Article</code>多了几项，如下：</p>
+
+<ol>
+<li><code>gorm:index</code>，用于声明这个字段为索引，如果你使用了自动迁移功能则会有所影响，在不使用则无影响</li>
+<li><code>Tag</code>字段，实际是一个嵌套的<code>struct</code>，它利用<code>TagID</code>与<code>Tag</code>模型相互关联，在执行查询的时候，能够达到<code>Article</code>、<code>Tag</code>关联查询的功能</li>
+<li><code>time.Now().Unix()</code> 返回当前的时间戳</li>
+</ol>
+
+<p>接下来，请确保已对上一章节的内容通读且了解，由于逻辑偏差不会太远，我们本节直接编写这五个接口</p>
+
+<hr />
+
+<p>打开<code>models</code>目录下的<code>article.go</code>，修改文件内容：</p>
+
+<pre><code class="language-go">package models
+
+import (
+    &quot;time&quot;
+
+    &quot;github.com/jinzhu/gorm&quot;
+)
+
+type Article struct {
+    Model
+
+    TagID int `json:&quot;tag_id&quot; gorm:&quot;index&quot;`
+    Tag   Tag `json:&quot;tag&quot;`
+
+    Title string `json:&quot;title&quot;`
+    Desc string `json:&quot;desc&quot;`
+    Content string `json:&quot;content&quot;`
+    CreatedBy string `json:&quot;created_by&quot;`
+    ModifiedBy string `json:&quot;modified_by&quot;`
+    State int `json:&quot;state&quot;`
+}
+
+
+func ExistArticleByID(id int) bool {
+    var article Article
+    db.Select(&quot;id&quot;).Where(&quot;id = ?&quot;, id).First(&amp;article)
+
+    if article.ID &gt; 0 {
+        return true
+    }
+
+    return false
+}
+
+func GetArticleTotal(maps interface {}) (count int){
+    db.Model(&amp;Article{}).Where(maps).Count(&amp;count)
+
+    return
+}
+
+func GetArticles(pageNum int, pageSize int, maps interface {}) (articles []Article) {
+    db.Preload(&quot;Tag&quot;).Where(maps).Offset(pageNum).Limit(pageSize).Find(&amp;articles)
+
+    return
+}
+
+func GetArticle(id int) (article Article) {
+    db.Where(&quot;id = ?&quot;, id).First(&amp;article)
+    db.Model(&amp;article).Related(&amp;article.Tag)
+
+    return
+}
+
+func EditArticle(id int, data interface {}) bool {
+    db.Model(&amp;Article{}).Where(&quot;id = ?&quot;, id).Updates(data)
+
+    return true
+}
+
+func AddArticle(data map[string]interface {}) bool {
+    db.Create(&amp;Article {
+        TagID : data[&quot;tag_id&quot;].(int),
+        Title : data[&quot;title&quot;].(string),
+        Desc : data[&quot;desc&quot;].(string),
+        Content : data[&quot;content&quot;].(string),
+        CreatedBy : data[&quot;created_by&quot;].(string),
+        State : data[&quot;state&quot;].(int),
+    })
+
+    return true
+}
+
+func DeleteArticle(id int) bool {
+    db.Where(&quot;id = ?&quot;, id).Delete(Article{})
+
+    return true
+}
+
+func (article *Article) BeforeCreate(scope *gorm.Scope) error {
+    scope.SetColumn(&quot;CreatedOn&quot;, time.Now().Unix())
+
+    return nil
+}
+
+func (article *Article) BeforeUpdate(scope *gorm.Scope) error {
+    scope.SetColumn(&quot;ModifiedOn&quot;, time.Now().Unix())
+
+    return nil
+}
+</code></pre>
+
+<p>在这里，我们拿出三点不同来讲，如下：</p>
+
+<p><strong>1、 我们的<code>Article</code>是如何关联到<code>Tag</code>？</strong></p>
+
+<pre><code class="language-go">func GetArticle(id int) (article Article) {
+    db.Where(&quot;id = ?&quot;, id).First(&amp;article)
+    db.Model(&amp;article).Related(&amp;article.Tag)
+
+    return
+}
+</code></pre>
+
+<p>能够达到关联，首先是<code>gorm</code>本身做了大量的约定俗成</p>
+
+<ul>
+<li><code>Article</code>有一个结构体成员是<code>TagID</code>，就是外键。<code>gorm</code>会通过类名+ID 的方式去找到这两个类之间的关联关系</li>
+<li><code>Article</code>有一个结构体成员是<code>Tag</code>，就是我们嵌套在<code>Article</code>里的<code>Tag</code>结构体，我们可以通过<code>Related</code>进行关联查询</li>
+</ul>
+
+<p><strong>2、 <code>Preload</code>是什么东西，为什么查询可以得出每一项的关联<code>Tag</code>？</strong></p>
+
+<pre><code class="language-go">func GetArticles(pageNum int, pageSize int, maps interface {}) (articles []Article) {
+    db.Preload(&quot;Tag&quot;).Where(maps).Offset(pageNum).Limit(pageSize).Find(&amp;articles)
+
+    return
+}
+</code></pre>
+
+<p><code>Preload</code>就是一个预加载器，它会执行两条 SQL，分别是<code>SELECT * FROM blog_articles;</code>和<code>SELECT * FROM blog_tag WHERE id IN (1,2,3,4);</code>，那么在查询出结构后，<code>gorm</code>内部处理对应的映射逻辑，将其填充到<code>Article</code>的<code>Tag</code>中，会特别方便，并且避免了循环查询</p>
+
+<p>那么有没有别的办法呢，大致是两种</p>
+
+<ul>
+<li><code>gorm</code>的<code>Join</code></li>
+<li>循环<code>Related</code></li>
+</ul>
+
+<p>综合之下，还是<code>Preload</code>更好，如果你有更优的方案，欢迎说一下 :)</p>
+
+<p><strong>3、 <code>v.(I)</code> 是什么？</strong></p>
+
+<p><code>v</code>表示一个接口值，<code>I</code>表示接口类型。这个实际就是 Golang 中的<strong>类型断言</strong>，用于判断一个接口值的实际类型是否为某个类型，或一个非接口值的类型是否实现了某个接口类型</p>
+
+<hr />
+
+<p>打开<code>routers</code>目录下 v1 版本的<code>article.go</code>文件，修改文件内容：</p>
+
+<pre><code class="language-go">package v1
+
+import (
+    &quot;net/http&quot;
+    &quot;log&quot;
+
+    &quot;github.com/gin-gonic/gin&quot;
+    &quot;github.com/astaxie/beego/validation&quot;
+    &quot;github.com/unknwon/com&quot;
+
+    &quot;github.com/zshipu/go-gin-example/models&quot;
+    &quot;github.com/zshipu/go-gin-example/pkg/e&quot;
+    &quot;github.com/zshipu/go-gin-example/pkg/setting&quot;
+    &quot;github.com/zshipu/go-gin-example/pkg/util&quot;
+)
+
+//获取单个文章
+func GetArticle(c *gin.Context) {
+    id := com.StrTo(c.Param(&quot;id&quot;)).MustInt()
+
+    valid := validation.Validation{}
+    valid.Min(id, 1, &quot;id&quot;).Message(&quot;ID必须大于0&quot;)
+
+    code := e.INVALID_PARAMS
+    var data interface {}
+    if ! valid.HasErrors() {
+        if models.ExistArticleByID(id) {
+            data = models.GetArticle(id)
+            code = e.SUCCESS
+        } else {
+            code = e.ERROR_NOT_EXIST_ARTICLE
+        }
+    } else {
+        for _, err := range valid.Errors {
+            log.Printf(&quot;err.key: %s, err.message: %s&quot;, err.Key, err.Message)
+        }
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        &quot;code&quot; : code,
+        &quot;msg&quot; : e.GetMsg(code),
+        &quot;data&quot; : data,
+    })
+}
+
+//获取多个文章
+func GetArticles(c *gin.Context) {
+    data := make(map[string]interface{})
+    maps := make(map[string]interface{})
+    valid := validation.Validation{}
+
+    var state int = -1
+    if arg := c.Query(&quot;state&quot;); arg != &quot;&quot; {
+        state = com.StrTo(arg).MustInt()
+        maps[&quot;state&quot;] = state
+
+        valid.Range(state, 0, 1, &quot;state&quot;).Message(&quot;状态只允许0或1&quot;)
+    }
+
+    var tagId int = -1
+    if arg := c.Query(&quot;tag_id&quot;); arg != &quot;&quot; {
+        tagId = com.StrTo(arg).MustInt()
+        maps[&quot;tag_id&quot;] = tagId
+
+        valid.Min(tagId, 1, &quot;tag_id&quot;).Message(&quot;标签ID必须大于0&quot;)
+    }
+
+    code := e.INVALID_PARAMS
+    if ! valid.HasErrors() {
+        code = e.SUCCESS
+
+        data[&quot;lists&quot;] = models.GetArticles(util.GetPage(c), setting.PageSize, maps)
+        data[&quot;total&quot;] = models.GetArticleTotal(maps)
+
+    } else {
+        for _, err := range valid.Errors {
+            log.Printf(&quot;err.key: %s, err.message: %s&quot;, err.Key, err.Message)
+        }
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        &quot;code&quot; : code,
+        &quot;msg&quot; : e.GetMsg(code),
+        &quot;data&quot; : data,
+    })
+}
+
+//新增文章
+func AddArticle(c *gin.Context) {
+    tagId := com.StrTo(c.Query(&quot;tag_id&quot;)).MustInt()
+    title := c.Query(&quot;title&quot;)
+    desc := c.Query(&quot;desc&quot;)
+    content := c.Query(&quot;content&quot;)
+    createdBy := c.Query(&quot;created_by&quot;)
+    state := com.StrTo(c.DefaultQuery(&quot;state&quot;, &quot;0&quot;)).MustInt()
+
+    valid := validation.Validation{}
+    valid.Min(tagId, 1, &quot;tag_id&quot;).Message(&quot;标签ID必须大于0&quot;)
+    valid.Required(title, &quot;title&quot;).Message(&quot;标题不能为空&quot;)
+    valid.Required(desc, &quot;desc&quot;).Message(&quot;简述不能为空&quot;)
+    valid.Required(content, &quot;content&quot;).Message(&quot;内容不能为空&quot;)
+    valid.Required(createdBy, &quot;created_by&quot;).Message(&quot;创建人不能为空&quot;)
+    valid.Range(state, 0, 1, &quot;state&quot;).Message(&quot;状态只允许0或1&quot;)
+
+    code := e.INVALID_PARAMS
+    if ! valid.HasErrors() {
+        if models.ExistTagByID(tagId) {
+            data := make(map[string]interface {})
+            data[&quot;tag_id&quot;] = tagId
+            data[&quot;title&quot;] = title
+            data[&quot;desc&quot;] = desc
+            data[&quot;content&quot;] = content
+            data[&quot;created_by&quot;] = createdBy
+            data[&quot;state&quot;] = state
+
+            models.AddArticle(data)
+            code = e.SUCCESS
+        } else {
+            code = e.ERROR_NOT_EXIST_TAG
+        }
+    } else {
+        for _, err := range valid.Errors {
+            log.Printf(&quot;err.key: %s, err.message: %s&quot;, err.Key, err.Message)
+        }
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        &quot;code&quot; : code,
+        &quot;msg&quot; : e.GetMsg(code),
+        &quot;data&quot; : make(map[string]interface{}),
+    })
+}
+
+//修改文章
+func EditArticle(c *gin.Context) {
+    valid := validation.Validation{}
+
+    id := com.StrTo(c.Param(&quot;id&quot;)).MustInt()
+    tagId := com.StrTo(c.Query(&quot;tag_id&quot;)).MustInt()
+    title := c.Query(&quot;title&quot;)
+    desc := c.Query(&quot;desc&quot;)
+    content := c.Query(&quot;content&quot;)
+    modifiedBy := c.Query(&quot;modified_by&quot;)
+
+    var state int = -1
+    if arg := c.Query(&quot;state&quot;); arg != &quot;&quot; {
+        state = com.StrTo(arg).MustInt()
+        valid.Range(state, 0, 1, &quot;state&quot;).Message(&quot;状态只允许0或1&quot;)
+    }
+
+    valid.Min(id, 1, &quot;id&quot;).Message(&quot;ID必须大于0&quot;)
+    valid.MaxSize(title, 100, &quot;title&quot;).Message(&quot;标题最长为100字符&quot;)
+    valid.MaxSize(desc, 255, &quot;desc&quot;).Message(&quot;简述最长为255字符&quot;)
+    valid.MaxSize(content, 65535, &quot;content&quot;).Message(&quot;内容最长为65535字符&quot;)
+    valid.Required(modifiedBy, &quot;modified_by&quot;).Message(&quot;修改人不能为空&quot;)
+    valid.MaxSize(modifiedBy, 100, &quot;modified_by&quot;).Message(&quot;修改人最长为100字符&quot;)
+
+    code := e.INVALID_PARAMS
+    if ! valid.HasErrors() {
+        if models.ExistArticleByID(id) {
+            if models.ExistTagByID(tagId) {
+                data := make(map[string]interface {})
+                if tagId &gt; 0 {
+                    data[&quot;tag_id&quot;] = tagId
+                }
+                if title != &quot;&quot; {
+                    data[&quot;title&quot;] = title
+                }
+                if desc != &quot;&quot; {
+                    data[&quot;desc&quot;] = desc
+                }
+                if content != &quot;&quot; {
+                    data[&quot;content&quot;] = content
+                }
+
+                data[&quot;modified_by&quot;] = modifiedBy
+
+                models.EditArticle(id, data)
+                code = e.SUCCESS
+            } else {
+                code = e.ERROR_NOT_EXIST_TAG
+            }
+        } else {
+            code = e.ERROR_NOT_EXIST_ARTICLE
+        }
+    } else {
+        for _, err := range valid.Errors {
+            log.Printf(&quot;err.key: %s, err.message: %s&quot;, err.Key, err.Message)
+        }
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        &quot;code&quot; : code,
+        &quot;msg&quot; : e.GetMsg(code),
+        &quot;data&quot; : make(map[string]string),
+    })
+}
+
+//删除文章
+func DeleteArticle(c *gin.Context) {
+    id := com.StrTo(c.Param(&quot;id&quot;)).MustInt()
+
+    valid := validation.Validation{}
+    valid.Min(id, 1, &quot;id&quot;).Message(&quot;ID必须大于0&quot;)
+
+    code := e.INVALID_PARAMS
+    if ! valid.HasErrors() {
+        if models.ExistArticleByID(id) {
+            models.DeleteArticle(id)
+            code = e.SUCCESS
+        } else {
+            code = e.ERROR_NOT_EXIST_ARTICLE
+        }
+    } else {
+        for _, err := range valid.Errors {
+            log.Printf(&quot;err.key: %s, err.message: %s&quot;, err.Key, err.Message)
+        }
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        &quot;code&quot; : code,
+        &quot;msg&quot; : e.GetMsg(code),
+        &quot;data&quot; : make(map[string]string),
+    })
+}
+</code></pre>
+
+<p>当前目录结构：</p>
+
+<pre><code>go-gin-example/
+├── conf
+│   └── app.ini
+├── main.go
+├── middleware
+├── models
+│   ├── article.go
+│   ├── models.go
+│   └── tag.go
+├── pkg
+│   ├── e
+│   │   ├── code.go
+│   │   └── msg.go
+│   ├── setting
+│   │   └── setting.go
+│   └── util
+│       └── pagination.go
+├── routers
+│   ├── api
+│   │   └── v1
+│   │       ├── article.go
+│   │       └── tag.go
+│   └── router.go
+├── runtime
+</code></pre>
+
+<h2 id="验证功能">验证功能</h2>
+
+<p>我们重启服务，执行<code>go run main.go</code>，检查控制台输出结果</p>
+
+<pre><code>$ go run main.go
+[GIN-debug] [WARNING] Running in &quot;debug&quot; mode. Switch to &quot;release&quot; mode in production.
+ - using env:   export GIN_MODE=release
+ - using code:  gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /api/v1/tags              --&gt; gin-blog/routers/api/v1.GetTags (3 handlers)
+[GIN-debug] POST   /api/v1/tags              --&gt; gin-blog/routers/api/v1.AddTag (3 handlers)
+[GIN-debug] PUT    /api/v1/tags/:id          --&gt; gin-blog/routers/api/v1.EditTag (3 handlers)
+[GIN-debug] DELETE /api/v1/tags/:id          --&gt; gin-blog/routers/api/v1.DeleteTag (3 handlers)
+[GIN-debug] GET    /api/v1/articles          --&gt; gin-blog/routers/api/v1.GetArticles (3 handlers)
+[GIN-debug] GET    /api/v1/articles/:id      --&gt; gin-blog/routers/api/v1.GetArticle (3 handlers)
+[GIN-debug] POST   /api/v1/articles          --&gt; gin-blog/routers/api/v1.AddArticle (3 handlers)
+[GIN-debug] PUT    /api/v1/articles/:id      --&gt; gin-blog/routers/api/v1.EditArticle (3 handlers)
+[GIN-debug] DELETE /api/v1/articles/:id      --&gt; gin-blog/routers/api/v1.DeleteArticle (3 handlers)
+</code></pre>
+
+<p>使用<code>Postman</code>检验接口是否正常，在这里大家可以选用合适的参数传递方式，此处为了方便展示我选用了 GET/Param 传参的方式，而后期会改为 POST。</p>
+
+<ul>
+<li>POST：<a href="http://127.0.0.1:8000/api/v1/articles?tag_id=1&amp;title=test1&amp;desc=test-desc&amp;content=test-content&amp;created_by=test-created&amp;state=1">http://127.0.0.1:8000/api/v1/articles?tag_id=1&amp;title=test1&amp;desc=test-desc&amp;content=test-content&amp;created_by=test-created&amp;state=1</a></li>
+<li>GET：<a href="http://127.0.0.1:8000/api/v1/articles">http://127.0.0.1:8000/api/v1/articles</a></li>
+<li>GET：<a href="http://127.0.0.1:8000/api/v1/articles/1">http://127.0.0.1:8000/api/v1/articles/1</a></li>
+<li>PUT：<a href="http://127.0.0.1:8000/api/v1/articles/1?tag_id=1&amp;title=test-edit1&amp;desc=test-desc-edit&amp;content=test-content-edit&amp;modified_by=test-created-edit&amp;state=0">http://127.0.0.1:8000/api/v1/articles/1?tag_id=1&amp;title=test-edit1&amp;desc=test-desc-edit&amp;content=test-content-edit&amp;modified_by=test-created-edit&amp;state=0</a></li>
+<li>DELETE：<a href="http://127.0.0.1:8000/api/v1/articles/1">http://127.0.0.1:8000/api/v1/articles/1</a></li>
+</ul>
+
+<p>至此，我们的 API&rsquo;s 编写就到这里，下一节我们将介绍另外的一些技巧！</p>
+
+        </div>
+
+        
+<div class="post-archive">
+    <ul class="post-copyright">
+        <li><strong>原文作者：</strong><a rel="author" href="https://go.zshipu.com/">知识铺</a></li>
+        <li style="word-break:break-all"><strong>原文链接：</strong><a href="https://go.zshipu.com/posts/go/gin/2018-02-13-api-03/">https://go.zshipu.com/posts/go/gin/2018-02-13-api-03/</a></li>
+        <li><strong>版权声明：</strong>本作品采用<a rel="license" href="https://creativecommons.org/licenses/by-nc-nd/4.0/">知识共享署名-非商业性使用-禁止演绎 4.0 国际许可协议</a>进行许可，非商业转载请注明出处（作者，原文链接），商业转载请联系作者获得授权。</li>
+        <li><strong>免责声明：</strong>本页面内容均来源于站内编辑发布，部分信息来源互联网，并不意味着本站赞同其观点或者证实其内容的真实性，如涉及版权等问题，请立即联系客服进行更改或删除，保证您的合法权益。转载请注明来源，欢迎对文章中的引用来源进行考证，欢迎指出任何有错误或不够清晰的表达。也可以邮件至 sblig@126.com</li>
+    </ul>
+</div>
+<br/>
+
+
+
+        
+
+<div class="post-archive">
+    <h2>See Also</h2>
+    <ul class="listing">
+        
+        <li><a href="/posts/go/gin/2018-02-12-api-02/">「连载三」Gin搭建Blog API&#39;s （二）</a></li>
+        
+        <li><a href="/posts/go/gin/2018-02-11-api-01/">「连载二」Gin搭建Blog API&#39;s （一）</a></li>
+        
+        <li><a href="/posts/go/gin/2018-02-10-install/">「连载一」Go 介绍与环境安装</a></li>
+        
+        <li><a href="/about/">关于我</a></li>
+        
+        <li><a href="/archives/">归档</a></li>
+        
+    </ul>
+</div>
+
+
+        <div class="post-meta meta-tags">
+            
+            <ul class="clearfix">
+                
+                <li><a href='/tags/go'>go</a></li>
+                
+                <li><a href='/tags/gin'>gin</a></li>
+                
+            </ul>
+            
+        </div>
+    </article>
+    
+    
+
+    
+    
+    <div class="post bg-white">
+      <script src="https://utteranc.es/client.js"
+            repo= "zshipu/zshipu-go"
+            issue-term="pathname"
+            theme="github-light"
+            crossorigin="anonymous"
+            async>
+      </script>
+    </div>
+    
+</div>
+
+                    <footer id="footer">
+    <div>
+        &copy; 2021 <a href="https://go.zshipu.com/">知识铺的博客 By 知识铺</a>
+        
+        | <a rel="nofollow" target="_blank" href="https://beian.miit.gov.cn/">浙 ICP 备19032823号-1</a>
+        
+    </div>
+    <br />
+    <div>
+        <div class="github-badge">
+            <a href="https://gohugo.io/" target="_black" rel="nofollow"><span class="badge-subject">Powered by</span><span class="badge-value bg-blue">Hugo</span></a>
+        </div>
+        <div class="github-badge">
+            <a href="https://www.flysnow.org/" target="_black"><span class="badge-subject">Design by</span><span class="badge-value bg-brightgreen">飞雪无情</span></a>
+        </div>
+        <div class="github-badge">
+            <a href="https://github.com/flysnow-org/maupassant-hugo" target="_black"><span class="badge-subject">Theme</span><span class="badge-value bg-yellowgreen">Maupassant</span></a>
+        </div>
+    </div>
+</footer>
+
+
+    
+    <script type="text/javascript">
+        window.MathJax = {
+            tex2jax: {
+                inlineMath: [['$', '$']],
+                processEscapes: true
+                }
+            };
+    </script>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
+
+<a id="rocket" href="#top"></a>
+<script type="text/javascript" src='/js/totop.js?v=0.0.0' async=""></script>
+
+
+
+    <script type="text/javascript" src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" async></script>
+
+
+
+
+                </div>
+
+                <div id="secondary">
+    <section class="widget">
+        <form id="search" action='https://go.zshipu.com/search/' method="get" accept-charset="utf-8" target="_blank" _lpchecked="1">
+      
+      <input type="text" name="q" maxlength="20" placeholder="Search">
+      <input type="hidden" name="sitesearch" value="https://go.zshipu.com/">
+      <button type="submit" class="submit icon-search"></button>
+</form>
+    </section>
+    
+    <section class="widget">
+        <h3 class="widget-title">最近文章</h3>
+<ul class="widget-list">
+    
+    <li>
+        <a href="https://go.zshipu.com/posts/go/go1.16-3/" title="Go1.16 新特性：详解内存管理机制的变更，你需要了解">Go1.16 新特性：详解内存管理机制的变更，你需要了解</a>
+    </li>
+    
+    <li>
+        <a href="https://go.zshipu.com/posts/go/go1.16-2/" title="Go1.16 新特性：快速上手 Go embed">Go1.16 新特性：快速上手 Go embed</a>
+    </li>
+    
+    <li>
+        <a href="https://go.zshipu.com/posts/go/go1.16-1/" title="Go1.16 即将正式发布，以下变更你需要知道">Go1.16 即将正式发布，以下变更你需要知道</a>
+    </li>
+    
+    <li>
+        <a href="https://go.zshipu.com/posts/go/generics-proposal/" title="快报：正式提案将泛型特性加入 Go 语言">快报：正式提案将泛型特性加入 Go 语言</a>
+    </li>
+    
+    <li>
+        <a href="https://go.zshipu.com/posts/2021-ecug/" title="推荐一个牛逼的技术社区！">推荐一个牛逼的技术社区！</a>
+    </li>
+    
+    <li>
+        <a href="https://go.zshipu.com/posts/2020-top100/" title="吐血整理 | 快速了解全球软件案例（Top100）">吐血整理 | 快速了解全球软件案例（Top100）</a>
+    </li>
+    
+    <li>
+        <a href="https://go.zshipu.com/posts/go/go-error2panic/" title="Go 错误处理：用 panic 取代 err != nil 的模式">Go 错误处理：用 panic 取代 err != nil 的模式</a>
+    </li>
+    
+    <li>
+        <a href="https://go.zshipu.com/posts/go/go-concurrent-lock/" title="Go 并发：一些有趣的现象和要避开的 “坑”">Go 并发：一些有趣的现象和要避开的 “坑”</a>
+    </li>
+    
+    <li>
+        <a href="https://go.zshipu.com/posts/go/go2-errors/" title="先睹为快，Go2 Error 的挣扎之路">先睹为快，Go2 Error 的挣扎之路</a>
+    </li>
+    
+    <li>
+        <a href="https://go.zshipu.com/posts/go/gophercon2020-errors/" title="重磅：Go errors 将不会有任何进一步的改进计划">重磅：Go errors 将不会有任何进一步的改进计划</a>
+    </li>
+    
+</ul>
+    </section>
+
+    
+<section class="widget">
+    <h3 class="widget-title" style="color:red">福利派送</h3>
+    <ul class="widget-list">
+        
+        <li>
+            <a href="https://promotion.aliyun.com/ntms/yunparter/invite.html?source=5176.11533457&amp;userCode=tzm8r4hc" title="【2019双12】ALL IN CLoud 低至1折" target="_blank" style="color:red">
+                
+                    <img src="https://img.alicdn.com/tfs/TB1_rYHo7P2gK0jSZPxXXacQpXa-690-388.jpg">
+                
+            </a>
+        </li>
+        
+        <li>
+            <a href="https://promotion.aliyun.com/ntms/yunparter/invite.html?source=5176.11533457&amp;userCode=tzm8r4hc" title="助力产业智慧升级，云服务器首年88元起，更有千元代金券礼包免费领！" target="_blank" style="color:red">
+                
+                    <img src="https://upload-dianshi-1255598498.file.myqcloud.com/345-7c71532bd4935fbdd9a67c1a71e577b1767b805c.200%E7%89%88%E6%9C%ACB.jpg">
+                
+            </a>
+        </li>
+        
+        <li>
+            <a href="https://promotion.aliyun.com/ntms/yunparter/invite.html?source=5176.11533457&amp;userCode=tzm8r4hc" title="【渠道专享低折扣】11月特惠 限时2折" target="_blank" style="color:red">
+                
+                    <img src="https://img.alicdn.com/tfs/TB1hblJl7Y2gK0jSZFgXXc5OFXa-750-400.jpg">
+                
+            </a>
+        </li>
+        
+    </ul>
+</section>
+
+
+    <section class="widget">
+        <h3 class="widget-title"><a href='/categories/'>分类</a></h3>
+<ul class="widget-list">
+    
+</ul>
+    </section>
+
+    <section class="widget">
+        <h3 class="widget-title"><a href='/tags/'>标签</a></h3>
+<div class="tagcloud">
+    
+    <a href="https://go.zshipu.com/tags/ecug/">ecug</a>
+    
+    <a href="https://go.zshipu.com/tags/gin/">gin</a>
+    
+    <a href="https://go.zshipu.com/tags/go/">go</a>
+    
+    <a href="https://go.zshipu.com/tags/go-modules/">go-modules</a>
+    
+    <a href="https://go.zshipu.com/tags/grpc/">grpc</a>
+    
+    <a href="https://go.zshipu.com/tags/grpc-gateway/">grpc-gateway</a>
+    
+    <a href="https://go.zshipu.com/tags/kubernetes/">kubernetes</a>
+    
+    <a href="https://go.zshipu.com/tags/prometheus/">prometheus</a>
+    
+    <a href="https://go.zshipu.com/tags/protobuf/">protobuf</a>
+    
+    <a href="https://go.zshipu.com/tags/top100/">top100</a>
+    
+    <a href="https://go.zshipu.com/tags/untagged/">untagged</a>
+    
+    <a href="https://go.zshipu.com/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/">微服务</a>
+    
+    <a href="https://go.zshipu.com/tags/%E6%95%B0%E6%8D%AE%E5%88%86%E6%9E%90/">数据分析</a>
+    
+    <a href="https://go.zshipu.com/tags/%E6%9C%8D%E5%8A%A1%E6%B2%BB%E7%90%86/">服务治理</a>
+    
+    <a href="https://go.zshipu.com/tags/%E6%B3%9B%E5%9E%8B/">泛型</a>
+    
+    <a href="https://go.zshipu.com/tags/%E6%B7%B1%E5%BA%A6%E8%A7%A3%E5%AF%86/">深度解密</a>
+    
+    <a href="https://go.zshipu.com/tags/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/">源码分析</a>
+    
+    <a href="https://go.zshipu.com/tags/%E7%A8%8B%E5%BA%8F%E5%91%98%E7%9A%84%E8%87%AA%E6%88%91%E4%BF%AE%E5%85%BB/">程序员的自我修养</a>
+    
+</div>
+    </section>
+
+    
+<section class="widget">
+    <h3 class="widget-title">友情链接</h3>
+    <ul class="widget-list">
+        
+        <li>
+            <a target="_blank" href="https://blog.zshipu.com//" title="知识铺的博客">知识铺的博客</a>
+        </li>
+        
+    </ul>
+</section>
+
+
+    <section class="widget">
+        <h3 class="widget-title">其它</h3>
+        <ul class="widget-list">
+            <li><a href="https://go.zshipu.com/index.xml">文章 RSS</a></li>
+        </ul>
+    </section>
+</div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

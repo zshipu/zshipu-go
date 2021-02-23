@@ -1,0 +1,793 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>「连载四」TLS 证书认证 | 知识铺的博客</title>
+    <meta property="og:title" content="「连载四」TLS 证书认证 - 知识铺的博客">
+    <meta property="og:type" content="article">
+        
+    <meta property="article:published_time" content='2018-10-07T12:00:00&#43;08:00'>
+        
+        
+    <meta property="article:modified_time" content='2018-10-07T12:00:00&#43;08:00'>
+        
+    <meta name="Keywords" content="golang,go语言,go语言笔记,知识铺,java,android,博客,项目管理,python,软件架构,公众号,小程序">
+    <meta name="description" content="「连载四」TLS 证书认证">
+        <meta name="author" content="知识铺">
+        
+    <meta property="og:url" content="https://go.zshipu.com/posts/go/grpc/2018-10-07-grpc-tls/">
+    <link rel="shortcut icon" href='/favicon.ico'  type="image/x-icon">
+
+    <link rel="stylesheet" href='/css/normalize.css'>
+    <link rel="stylesheet" href='/css/style.css'>
+    <script type="text/javascript" src="//cdn.bootcdn.net/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+    
+    <script data-ad-client="ca-pub-2874221941555456" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+    
+    
+    
+    
+    
+    
+    
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-WLWJSST');</script>
+    
+</head>
+
+
+<body>
+
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-WLWJSST"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+
+    <header id="header" class="clearfix">
+    <div class="container">
+        <div class="col-group">
+            <div class="site-name ">
+                
+                    <a id="logo" href="https://go.zshipu.com/">
+                        知识铺的博客
+                    </a>
+                
+                <p class="description">专注于Android、Java、Go语言(golang)、移动互联网、项目管理、软件架构</p>
+            </div>
+            <div>
+                <nav id="nav-menu" class="clearfix">
+                    <a class="" href="https://go.zshipu.com/">首页</a>
+                    
+                    <a  href="https://go.zshipu.com/archives/" title="归档">归档</a>
+                    
+                    <a  href="https://go.zshipu.com/about/" title="关于">关于</a>
+                    
+                </nav>
+            </div>
+        </div>
+    </div>
+</header>
+
+    <div id="body">
+        <div class="container">
+            <div class="col-group">
+
+                <div class="col-8" id="main">
+                    
+<div class="res-cons">
+    <style type="text/css">
+    .post-toc {
+        position: fixed;
+        width: 200px;
+        margin-left: -210px;
+        padding: 5px 10px;
+        font-family: Athelas, STHeiti, Microsoft Yahei, serif;
+        font-size: 12px;
+        border: 1px solid rgba(0, 0, 0, .07);
+        border-radius: 5px;
+        background-color: rgba(255, 255, 255, 0.98);
+        background-clip: padding-box;
+        -webkit-box-shadow: 1px 1px 2px rgba(0, 0, 0, .125);
+        box-shadow: 1px 1px 2px rgba(0, 0, 0, .125);
+        word-wrap: break-word;
+        white-space: nowrap;
+        -webkit-box-sizing: border-box;
+        box-sizing: border-box;
+        z-index: 999;
+        cursor: pointer;
+        max-height: 70%;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    .post-toc .post-toc-title {
+        width: 100%;
+        margin: 0 auto;
+        font-size: 20px;
+        font-weight: 400;
+        text-transform: uppercase;
+        text-align: center;
+    }
+
+    .post-toc .post-toc-content {
+        font-size: 15px;
+    }
+
+    .post-toc .post-toc-content>nav>ul {
+        margin: 10px 0;
+    }
+
+    .post-toc .post-toc-content ul {
+        padding-left: 20px;
+        list-style: square;
+        margin: 0.5em;
+        line-height: 1.8em;
+    }
+
+    .post-toc .post-toc-content ul ul {
+        padding-left: 15px;
+        display: none;
+    }
+
+    @media print,
+    screen and (max-width:1057px) {
+        .post-toc {
+            display: none;
+        }
+    }
+</style>
+<div class="post-toc" style="position: absolute; top: 188px;">
+    <h2 class="post-toc-title">文章目录</h2>
+    <div class="post-toc-content">
+        <nav id="TableOfContents">
+<ul>
+<li>
+<ul>
+<li><a href="#前言">前言</a></li>
+<li><a href="#抓个包">抓个包</a></li>
+<li><a href="#证书生成">证书生成</a>
+<ul>
+<li><a href="#私钥">私钥</a></li>
+<li><a href="#自签公钥">自签公钥</a>
+<ul>
+<li><a href="#填写信息">填写信息</a></li>
+</ul></li>
+<li><a href="#生成完毕">生成完毕</a></li>
+</ul></li>
+<li><a href="#为什么之前不需要证书">为什么之前不需要证书</a>
+<ul>
+<li><a href="#server">Server</a></li>
+<li><a href="#client">Client</a></li>
+</ul></li>
+<li><a href="#grpc">gRPC</a>
+<ul>
+<li><a href="#tls-server">TLS Server</a></li>
+<li><a href="#tls-client">TLS Client</a></li>
+</ul></li>
+<li><a href="#验证">验证</a>
+<ul>
+<li><a href="#请求">请求</a></li>
+<li><a href="#抓个包-1">抓个包</a></li>
+</ul></li>
+<li><a href="#总结">总结</a></li>
+<li><a href="#问题">问题</a></li>
+</ul></li>
+</ul>
+</nav>
+    </div>
+</div>
+<script type="text/javascript">
+    $(document).ready(function () {
+        var postToc = $(".post-toc");
+        if (postToc.length) {
+            var leftPos = $("#main").offset().left;
+            if(leftPos<220){
+                postToc.css({"width":leftPos-10,"margin-left":(0-leftPos)})
+            }
+
+            var t = postToc.offset().top - 20,
+                a = {
+                    start: {
+                        position: "absolute",
+                        top: t
+                    },
+                    process: {
+                        position: "fixed",
+                        top: 20
+                    },
+                };
+            $(window).scroll(function () {
+                var e = $(window).scrollTop();
+                e < t ? postToc.css(a.start) : postToc.css(a.process)
+            })
+        }
+    })
+</script>
+    <article class="post">
+        <header>
+            <h1 class="post-title">「连载四」TLS 证书认证</h1>
+        </header>
+        <date class="post-meta meta-date">
+            2018年10月7日
+        </date>
+        
+        
+        <div class="post-meta">
+            <span id="busuanzi_container_page_pv">|<span id="busuanzi_value_page_pv"></span><span>
+                    阅读</span></span>
+        </div>
+        
+        
+        <div class="clear" style="display: none">
+            <div class="toc-article">
+                <div class="toc-title">文章目录</div>
+            </div>
+        </div>
+        
+        <div class="post-content">
+            
+
+<h2 id="前言">前言</h2>
+
+<p>在前面的章节里，我们介绍了 gRPC 的四种 API 使用方式。是不是很简单呢 😀</p>
+
+<p>此时存在一个安全问题，先前的例子中 gRPC Client/Server 都是明文传输的，会不会有被窃听的风险呢？</p>
+
+<p>从结论上来讲，是有的。在明文通讯的情况下，你的请求就是裸奔的，有可能被第三方恶意篡改或者伪造为“非法”的数据</p>
+
+<h2 id="抓个包">抓个包</h2>
+
+<p><img src="/posts/images/15e68df2ba9aa7cace3e26e35c79f200.jpg" alt="image" /></p>
+
+<p><img src="/posts/images/ebebd3ea7d306ad2fcd311f1d8b46cc0.jpg" alt="image" /></p>
+
+<p>嗯，明文传输无误。这是有问题的，接下将改造我们的 gRPC，以便于解决这个问题 😤</p>
+
+<h2 id="证书生成">证书生成</h2>
+
+<h3 id="私钥">私钥</h3>
+
+<pre><code>openssl ecparam -genkey -name secp384r1 -out server.key
+</code></pre>
+
+<h3 id="自签公钥">自签公钥</h3>
+
+<pre><code>openssl req -new -x509 -sha256 -key server.key -out server.pem -days 3650
+</code></pre>
+
+<h4 id="填写信息">填写信息</h4>
+
+<pre><code>Country Name (2 letter code) []:
+State or Province Name (full name) []:
+Locality Name (eg, city) []:
+Organization Name (eg, company) []:
+Organizational Unit Name (eg, section) []:
+Common Name (eg, fully qualified host name) []:go-grpc-example
+Email Address []:
+</code></pre>
+
+<h3 id="生成完毕">生成完毕</h3>
+
+<p>生成证书结束后，将证书相关文件放到 conf/ 下，目录结构：</p>
+
+<pre><code>$ tree go-grpc-example
+go-grpc-example
+├── client
+├── conf
+│   ├── server.key
+│   └── server.pem
+├── proto
+└── server
+    ├── simple_server
+    └── stream_server
+</code></pre>
+
+<p>由于本文偏向 gRPC，详解可参见 <a href="https://segmentfault.com/a/1190000013408485#articleHeader3">《制作证书》</a>。后续番外可能会展开细节描述 👌</p>
+
+<h2 id="为什么之前不需要证书">为什么之前不需要证书</h2>
+
+<p>在 simple_server 中，为什么“啥事都没干”就能在不需要证书的情况下运行呢？</p>
+
+<h3 id="server">Server</h3>
+
+<pre><code class="language-go">grpc.NewServer()
+</code></pre>
+
+<p>在服务端显然没有传入任何 DialOptions</p>
+
+<h3 id="client">Client</h3>
+
+<pre><code class="language-go">conn, err := grpc.Dial(&quot;:&quot;+PORT, grpc.WithInsecure())
+</code></pre>
+
+<p>在客户端留意到 <code>grpc.WithInsecure()</code> 方法</p>
+
+<pre><code class="language-go">func WithInsecure() DialOption {
+	return newFuncDialOption(func(o *dialOptions) {
+		o.insecure = true
+	})
+}
+</code></pre>
+
+<p>在方法内可以看到 <code>WithInsecure</code> 返回一个 <code>DialOption</code>，并且它最终会通过读取设置的值来禁用安全传输</p>
+
+<p>那么它“最终”又是在哪里处理的呢，我们把视线移到 <code>grpc.Dial()</code> 方法内</p>
+
+<pre><code class="language-go">func DialContext(ctx context.Context, target string, opts ...DialOption) (conn *ClientConn, err error) {
+    ...
+
+    for _, opt := range opts {
+		opt.apply(&amp;cc.dopts)
+	}
+    ...
+
+    if !cc.dopts.insecure {
+		if cc.dopts.copts.TransportCredentials == nil {
+			return nil, errNoTransportSecurity
+		}
+	} else {
+		if cc.dopts.copts.TransportCredentials != nil {
+			return nil, errCredentialsConflict
+		}
+		for _, cd := range cc.dopts.copts.PerRPCCredentials {
+			if cd.RequireTransportSecurity() {
+				return nil, errTransportCredentialsMissing
+			}
+		}
+	}
+	...
+
+	creds := cc.dopts.copts.TransportCredentials
+	if creds != nil &amp;&amp; creds.Info().ServerName != &quot;&quot; {
+		cc.authority = creds.Info().ServerName
+	} else if cc.dopts.insecure &amp;&amp; cc.dopts.authority != &quot;&quot; {
+		cc.authority = cc.dopts.authority
+	} else {
+		// Use endpoint from &quot;scheme://authority/endpoint&quot; as the default
+		// authority for ClientConn.
+		cc.authority = cc.parsedTarget.Endpoint
+	}
+	...
+}
+</code></pre>
+
+<h2 id="grpc">gRPC</h2>
+
+<p>接下来我们将正式开始编码，在 gRPC Client/Server 上实现 TLS 证书认证的支持 🤔</p>
+
+<h3 id="tls-server">TLS Server</h3>
+
+<pre><code class="language-go">package main
+
+import (
+	&quot;context&quot;
+	&quot;log&quot;
+	&quot;net&quot;
+
+	&quot;google.golang.org/grpc&quot;
+	&quot;google.golang.org/grpc/credentials&quot;
+
+	pb &quot;github.com/zshipu/go-grpc-example/proto&quot;
+)
+
+...
+
+const PORT = &quot;9001&quot;
+
+func main() {
+	c, err := credentials.NewServerTLSFromFile(&quot;../../conf/server.pem&quot;, &quot;../../conf/server.key&quot;)
+	if err != nil {
+		log.Fatalf(&quot;credentials.NewServerTLSFromFile err: %v&quot;, err)
+	}
+
+	server := grpc.NewServer(grpc.Creds(c))
+	pb.RegisterSearchServiceServer(server, &amp;SearchService{})
+
+	lis, err := net.Listen(&quot;tcp&quot;, &quot;:&quot;+PORT)
+	if err != nil {
+		log.Fatalf(&quot;net.Listen err: %v&quot;, err)
+	}
+
+	server.Serve(lis)
+}
+</code></pre>
+
+<ul>
+<li><p>credentials.NewServerTLSFromFile：根据服务端输入的证书文件和密钥构造 TLS 凭证</p>
+
+<pre><code class="language-go">func NewServerTLSFromFile(certFile, keyFile string) (TransportCredentials, error) {
+	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+	if err != nil {
+		return nil, err
+	}
+	return NewTLS(&amp;tls.Config{Certificates: []tls.Certificate{cert}}), nil
+}
+</code></pre></li>
+
+<li><p>grpc.Creds()：返回一个 ServerOption，用于设置服务器连接的凭据。用于 <code>grpc.NewServer(opt ...ServerOption)</code> 为 gRPC Server 设置连接选项</p>
+
+<pre><code class="language-go">func Creds(c credentials.TransportCredentials) ServerOption {
+	return func(o *options) {
+		o.creds = c
+	}
+}
+</code></pre></li>
+</ul>
+
+<p>经过以上两个简单步骤，gRPC Server 就建立起需证书认证的服务啦 🤔</p>
+
+<h3 id="tls-client">TLS Client</h3>
+
+<pre><code class="language-go">package main
+
+import (
+	&quot;context&quot;
+	&quot;log&quot;
+
+	&quot;google.golang.org/grpc&quot;
+	&quot;google.golang.org/grpc/credentials&quot;
+
+	pb &quot;github.com/zshipu/go-grpc-example/proto&quot;
+)
+
+const PORT = &quot;9001&quot;
+
+func main() {
+	c, err := credentials.NewClientTLSFromFile(&quot;../../conf/server.pem&quot;, &quot;go-grpc-example&quot;)
+	if err != nil {
+		log.Fatalf(&quot;credentials.NewClientTLSFromFile err: %v&quot;, err)
+	}
+
+	conn, err := grpc.Dial(&quot;:&quot;+PORT, grpc.WithTransportCredentials(c))
+	if err != nil {
+		log.Fatalf(&quot;grpc.Dial err: %v&quot;, err)
+	}
+	defer conn.Close()
+
+	client := pb.NewSearchServiceClient(conn)
+	resp, err := client.Search(context.Background(), &amp;pb.SearchRequest{
+		Request: &quot;gRPC&quot;,
+	})
+	if err != nil {
+		log.Fatalf(&quot;client.Search err: %v&quot;, err)
+	}
+
+	log.Printf(&quot;resp: %s&quot;, resp.GetResponse())
+}
+</code></pre>
+
+<ul>
+<li><p>credentials.NewClientTLSFromFile()：根据客户端输入的证书文件和密钥构造 TLS 凭证。serverNameOverride 为服务名称</p>
+
+<pre><code class="language-go">func NewClientTLSFromFile(certFile, serverNameOverride string) (TransportCredentials, error) {
+	b, err := ioutil.ReadFile(certFile)
+	if err != nil {
+		return nil, err
+	}
+	cp := x509.NewCertPool()
+	if !cp.AppendCertsFromPEM(b) {
+		return nil, fmt.Errorf(&quot;credentials: failed to append certificates&quot;)
+	}
+	return NewTLS(&amp;tls.Config{ServerName: serverNameOverride, RootCAs: cp}), nil
+}
+</code></pre></li>
+
+<li><p>grpc.WithTransportCredentials()：返回一个配置连接的 DialOption 选项。用于 <code>grpc.Dial(target string, opts ...DialOption)</code> 设置连接选项</p>
+
+<pre><code class="language-go">func WithTransportCredentials(creds credentials.TransportCredentials) DialOption {
+	return newFuncDialOption(func(o *dialOptions) {
+		o.copts.TransportCredentials = creds
+	})
+}
+</code></pre></li>
+</ul>
+
+<h2 id="验证">验证</h2>
+
+<h3 id="请求">请求</h3>
+
+<p>重新启动 server.go 和执行 client.go，得到响应结果</p>
+
+<pre><code>$ go run client.go
+2018/09/30 20:00:21 resp: gRPC Server
+</code></pre>
+
+<h3 id="抓个包-1">抓个包</h3>
+
+<p><img src="/posts/images/c8ad6edf1f7d084883b847b3eee29dd2.jpg" alt="image" /></p>
+
+<p>成功。</p>
+
+<h2 id="总结">总结</h2>
+
+<p>在本章节我们实现了 gRPC TLS Client/Servert，你以为大功告成了吗？我不 😤</p>
+
+<h2 id="问题">问题</h2>
+
+<p>你仔细再看看，Client 是基于 Server 端的证书和服务名称来建立请求的。这样的话，你就需要将 Server 的证书通过各种手段给到 Client 端，否则是无法完成这项任务的</p>
+
+<p>问题也就来了，你无法保证你的“各种手段”是安全的，毕竟现在的网络环境是很危险的，万一被&hellip;</p>
+
+<p>我们将在下一章节解决这个问题，保证其可靠性 🙂</p>
+
+        </div>
+
+        
+<div class="post-archive">
+    <ul class="post-copyright">
+        <li><strong>原文作者：</strong><a rel="author" href="https://go.zshipu.com/">知识铺</a></li>
+        <li style="word-break:break-all"><strong>原文链接：</strong><a href="https://go.zshipu.com/posts/go/grpc/2018-10-07-grpc-tls/">https://go.zshipu.com/posts/go/grpc/2018-10-07-grpc-tls/</a></li>
+        <li><strong>版权声明：</strong>本作品采用<a rel="license" href="https://creativecommons.org/licenses/by-nc-nd/4.0/">知识共享署名-非商业性使用-禁止演绎 4.0 国际许可协议</a>进行许可，非商业转载请注明出处（作者，原文链接），商业转载请联系作者获得授权。</li>
+        <li><strong>免责声明：</strong>本页面内容均来源于站内编辑发布，部分信息来源互联网，并不意味着本站赞同其观点或者证实其内容的真实性，如涉及版权等问题，请立即联系客服进行更改或删除，保证您的合法权益。转载请注明来源，欢迎对文章中的引用来源进行考证，欢迎指出任何有错误或不够清晰的表达。也可以邮件至 sblig@126.com</li>
+    </ul>
+</div>
+<br/>
+
+
+
+        
+
+<div class="post-archive">
+    <h2>See Also</h2>
+    <ul class="listing">
+        
+        <li><a href="/posts/go/grpc/2018-09-24-stream-client-server/">「连载三」gRPC Streaming, Client and Server</a></li>
+        
+        <li><a href="/posts/go/grpc/2018-09-23-client-and-server/">「连载二」gRPC Client and Server</a></li>
+        
+        <li><a href="/posts/go/grpc/2018-09-22-install/">「连载一」gRPC及相关介绍</a></li>
+        
+        <li><a href="/posts/go/pkg/2018-09-28-log/">log 标准库</a></li>
+        
+        <li><a href="/posts/go/tools/2018-09-15-go-tool-pprof/">Go 大杀器之性能剖析 PProf</a></li>
+        
+    </ul>
+</div>
+
+
+        <div class="post-meta meta-tags">
+            
+            <ul class="clearfix">
+                
+                <li><a href='/tags/go'>go</a></li>
+                
+                <li><a href='/tags/grpc'>grpc</a></li>
+                
+            </ul>
+            
+        </div>
+    </article>
+    
+    
+
+    
+    
+    <div class="post bg-white">
+      <script src="https://utteranc.es/client.js"
+            repo= "zshipu/zshipu-go"
+            issue-term="pathname"
+            theme="github-light"
+            crossorigin="anonymous"
+            async>
+      </script>
+    </div>
+    
+</div>
+
+                    <footer id="footer">
+    <div>
+        &copy; 2021 <a href="https://go.zshipu.com/">知识铺的博客 By 知识铺</a>
+        
+        | <a rel="nofollow" target="_blank" href="https://beian.miit.gov.cn/">浙 ICP 备19032823号-1</a>
+        
+    </div>
+    <br />
+    <div>
+        <div class="github-badge">
+            <a href="https://gohugo.io/" target="_black" rel="nofollow"><span class="badge-subject">Powered by</span><span class="badge-value bg-blue">Hugo</span></a>
+        </div>
+        <div class="github-badge">
+            <a href="https://www.flysnow.org/" target="_black"><span class="badge-subject">Design by</span><span class="badge-value bg-brightgreen">飞雪无情</span></a>
+        </div>
+        <div class="github-badge">
+            <a href="https://github.com/flysnow-org/maupassant-hugo" target="_black"><span class="badge-subject">Theme</span><span class="badge-value bg-yellowgreen">Maupassant</span></a>
+        </div>
+    </div>
+</footer>
+
+
+    
+    <script type="text/javascript">
+        window.MathJax = {
+            tex2jax: {
+                inlineMath: [['$', '$']],
+                processEscapes: true
+                }
+            };
+    </script>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
+
+<a id="rocket" href="#top"></a>
+<script type="text/javascript" src='/js/totop.js?v=0.0.0' async=""></script>
+
+
+
+    <script type="text/javascript" src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" async></script>
+
+
+
+
+                </div>
+
+                <div id="secondary">
+    <section class="widget">
+        <form id="search" action='https://go.zshipu.com/search/' method="get" accept-charset="utf-8" target="_blank" _lpchecked="1">
+      
+      <input type="text" name="q" maxlength="20" placeholder="Search">
+      <input type="hidden" name="sitesearch" value="https://go.zshipu.com/">
+      <button type="submit" class="submit icon-search"></button>
+</form>
+    </section>
+    
+    <section class="widget">
+        <h3 class="widget-title">最近文章</h3>
+<ul class="widget-list">
+    
+    <li>
+        <a href="https://go.zshipu.com/posts/go/go1.16-3/" title="Go1.16 新特性：详解内存管理机制的变更，你需要了解">Go1.16 新特性：详解内存管理机制的变更，你需要了解</a>
+    </li>
+    
+    <li>
+        <a href="https://go.zshipu.com/posts/go/go1.16-2/" title="Go1.16 新特性：快速上手 Go embed">Go1.16 新特性：快速上手 Go embed</a>
+    </li>
+    
+    <li>
+        <a href="https://go.zshipu.com/posts/go/go1.16-1/" title="Go1.16 即将正式发布，以下变更你需要知道">Go1.16 即将正式发布，以下变更你需要知道</a>
+    </li>
+    
+    <li>
+        <a href="https://go.zshipu.com/posts/go/generics-proposal/" title="快报：正式提案将泛型特性加入 Go 语言">快报：正式提案将泛型特性加入 Go 语言</a>
+    </li>
+    
+    <li>
+        <a href="https://go.zshipu.com/posts/2021-ecug/" title="推荐一个牛逼的技术社区！">推荐一个牛逼的技术社区！</a>
+    </li>
+    
+    <li>
+        <a href="https://go.zshipu.com/posts/2020-top100/" title="吐血整理 | 快速了解全球软件案例（Top100）">吐血整理 | 快速了解全球软件案例（Top100）</a>
+    </li>
+    
+    <li>
+        <a href="https://go.zshipu.com/posts/go/go-error2panic/" title="Go 错误处理：用 panic 取代 err != nil 的模式">Go 错误处理：用 panic 取代 err != nil 的模式</a>
+    </li>
+    
+    <li>
+        <a href="https://go.zshipu.com/posts/go/go-concurrent-lock/" title="Go 并发：一些有趣的现象和要避开的 “坑”">Go 并发：一些有趣的现象和要避开的 “坑”</a>
+    </li>
+    
+    <li>
+        <a href="https://go.zshipu.com/posts/go/go2-errors/" title="先睹为快，Go2 Error 的挣扎之路">先睹为快，Go2 Error 的挣扎之路</a>
+    </li>
+    
+    <li>
+        <a href="https://go.zshipu.com/posts/go/gophercon2020-errors/" title="重磅：Go errors 将不会有任何进一步的改进计划">重磅：Go errors 将不会有任何进一步的改进计划</a>
+    </li>
+    
+</ul>
+    </section>
+
+    
+<section class="widget">
+    <h3 class="widget-title" style="color:red">福利派送</h3>
+    <ul class="widget-list">
+        
+        <li>
+            <a href="https://promotion.aliyun.com/ntms/yunparter/invite.html?source=5176.11533457&amp;userCode=tzm8r4hc" title="【2019双12】ALL IN CLoud 低至1折" target="_blank" style="color:red">
+                
+                    <img src="https://img.alicdn.com/tfs/TB1_rYHo7P2gK0jSZPxXXacQpXa-690-388.jpg">
+                
+            </a>
+        </li>
+        
+        <li>
+            <a href="https://promotion.aliyun.com/ntms/yunparter/invite.html?source=5176.11533457&amp;userCode=tzm8r4hc" title="助力产业智慧升级，云服务器首年88元起，更有千元代金券礼包免费领！" target="_blank" style="color:red">
+                
+                    <img src="https://upload-dianshi-1255598498.file.myqcloud.com/345-7c71532bd4935fbdd9a67c1a71e577b1767b805c.200%E7%89%88%E6%9C%ACB.jpg">
+                
+            </a>
+        </li>
+        
+        <li>
+            <a href="https://promotion.aliyun.com/ntms/yunparter/invite.html?source=5176.11533457&amp;userCode=tzm8r4hc" title="【渠道专享低折扣】11月特惠 限时2折" target="_blank" style="color:red">
+                
+                    <img src="https://img.alicdn.com/tfs/TB1hblJl7Y2gK0jSZFgXXc5OFXa-750-400.jpg">
+                
+            </a>
+        </li>
+        
+    </ul>
+</section>
+
+
+    <section class="widget">
+        <h3 class="widget-title"><a href='/categories/'>分类</a></h3>
+<ul class="widget-list">
+    
+</ul>
+    </section>
+
+    <section class="widget">
+        <h3 class="widget-title"><a href='/tags/'>标签</a></h3>
+<div class="tagcloud">
+    
+    <a href="https://go.zshipu.com/tags/ecug/">ecug</a>
+    
+    <a href="https://go.zshipu.com/tags/gin/">gin</a>
+    
+    <a href="https://go.zshipu.com/tags/go/">go</a>
+    
+    <a href="https://go.zshipu.com/tags/go-modules/">go-modules</a>
+    
+    <a href="https://go.zshipu.com/tags/grpc/">grpc</a>
+    
+    <a href="https://go.zshipu.com/tags/grpc-gateway/">grpc-gateway</a>
+    
+    <a href="https://go.zshipu.com/tags/kubernetes/">kubernetes</a>
+    
+    <a href="https://go.zshipu.com/tags/prometheus/">prometheus</a>
+    
+    <a href="https://go.zshipu.com/tags/protobuf/">protobuf</a>
+    
+    <a href="https://go.zshipu.com/tags/top100/">top100</a>
+    
+    <a href="https://go.zshipu.com/tags/untagged/">untagged</a>
+    
+    <a href="https://go.zshipu.com/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/">微服务</a>
+    
+    <a href="https://go.zshipu.com/tags/%E6%95%B0%E6%8D%AE%E5%88%86%E6%9E%90/">数据分析</a>
+    
+    <a href="https://go.zshipu.com/tags/%E6%9C%8D%E5%8A%A1%E6%B2%BB%E7%90%86/">服务治理</a>
+    
+    <a href="https://go.zshipu.com/tags/%E6%B3%9B%E5%9E%8B/">泛型</a>
+    
+    <a href="https://go.zshipu.com/tags/%E6%B7%B1%E5%BA%A6%E8%A7%A3%E5%AF%86/">深度解密</a>
+    
+    <a href="https://go.zshipu.com/tags/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/">源码分析</a>
+    
+    <a href="https://go.zshipu.com/tags/%E7%A8%8B%E5%BA%8F%E5%91%98%E7%9A%84%E8%87%AA%E6%88%91%E4%BF%AE%E5%85%BB/">程序员的自我修养</a>
+    
+</div>
+    </section>
+
+    
+<section class="widget">
+    <h3 class="widget-title">友情链接</h3>
+    <ul class="widget-list">
+        
+        <li>
+            <a target="_blank" href="https://blog.zshipu.com//" title="知识铺的博客">知识铺的博客</a>
+        </li>
+        
+    </ul>
+</section>
+
+
+    <section class="widget">
+        <h3 class="widget-title">其它</h3>
+        <ul class="widget-list">
+            <li><a href="https://go.zshipu.com/index.xml">文章 RSS</a></li>
+        </ul>
+    </section>
+</div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
