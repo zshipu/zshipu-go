@@ -112,19 +112,19 @@
     
     <item>
       <title>为什么容器内存占用居高不下，频频 OOM（续）</title>
-      <link>https://go.zshipu.com/posts/why-container-memory-exceed2/</link>
+      <link>https://go.zshipu.com/posts/news/why-container-memory-exceed2/</link>
       <pubDate>Fri, 19 Jun 2020 21:29:08 +0800</pubDate>
       
-      <guid>https://go.zshipu.com/posts/why-container-memory-exceed2/</guid>
+      <guid>https://go.zshipu.com/posts/news/why-container-memory-exceed2/</guid>
       <description>在上周的文章《为什么容器内存占用居高不下，频频 OOM》 中，我根据现状进行了分析和说明，收到了很多读者的建议和疑惑，因此有了这一篇文章，包含更进一步的说明和排查。 疑问 一般系统内存过高的情况下，可以通过 free -m 查看当前系统的内存使用情况： 在发现是系统内存占用高后，就会有读者会提到，为什么</description>
     </item>
     
     <item>
       <title>为什么容器内存占用居高不下，频频 OOM</title>
-      <link>https://go.zshipu.com/posts/why-container-memory-exceed/</link>
+      <link>https://go.zshipu.com/posts/news/why-container-memory-exceed/</link>
       <pubDate>Sun, 07 Jun 2020 14:52:19 +0800</pubDate>
       
-      <guid>https://go.zshipu.com/posts/why-container-memory-exceed/</guid>
+      <guid>https://go.zshipu.com/posts/news/why-container-memory-exceed/</guid>
       <description>最近我在回顾思考（写 PPT），整理了现状，发现了这个问题存在多时，经过一番波折，最终确定了元凶和相对可行的解决方案，因此也在这里分享一下排查历程。 时间线： 在上 Kubernetes 的前半年，只是用 Kubernetes，开发没有权限，业务服务极少，忙着写新业务，风平浪静。 在上 Kubernetes 的后半年，业务服务较少，</description>
     </item>
     

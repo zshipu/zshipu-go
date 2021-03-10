@@ -49,19 +49,19 @@
     
     <item>
       <title>推荐一个牛逼的技术社区！</title>
-      <link>https://go.zshipu.com/posts/2021-ecug/</link>
+      <link>https://go.zshipu.com/posts/news/2021-ecug/</link>
       <pubDate>Tue, 05 Jan 2021 21:26:50 +0800</pubDate>
       
-      <guid>https://go.zshipu.com/posts/2021-ecug/</guid>
+      <guid>https://go.zshipu.com/posts/news/2021-ecug/</guid>
       <description>相信我的读者中不少是 Go 语言的爱好者，又或是正在伺机而动。 今天要给大家所介绍的这个技术社区，就是由与 Go 语言有很浓厚的缘分的人所创办的。 他有如下几个业界标签： 早期的国内 Go 语言布道师。 早期在公司内大规模的推广和使用 Go 语言。 早期编写了一本 Go 语言图书：《Go 语言编程》。 现在是一家公司的 CE</description>
     </item>
     
     <item>
       <title>吐血整理 | 快速了解全球软件案例（Top100）</title>
-      <link>https://go.zshipu.com/posts/2020-top100/</link>
+      <link>https://go.zshipu.com/posts/news/2020-top100/</link>
       <pubDate>Tue, 22 Dec 2020 21:26:44 +0800</pubDate>
       
-      <guid>https://go.zshipu.com/posts/2020-top100/</guid>
+      <guid>https://go.zshipu.com/posts/news/2020-top100/</guid>
       <description>前几天，知识铺去了趟北京，参加了为期三天的全球软件案例研究峰会（TOP 100）。 同时记了一些笔记，整理后分享出来，希望对大家有所帮助，拓展眼界非常重要。 内容比较多（已经精简过），大家可以挑自己感兴趣的学习，建议三连。 一级目录如下： 百度内部业务 ServieMesh 实践。 云原生开发平台在腾讯游戏运营中</description>
     </item>
     
@@ -229,28 +229,28 @@
     
     <item>
       <title>为什么容器内存占用居高不下，频频 OOM（续）</title>
-      <link>https://go.zshipu.com/posts/why-container-memory-exceed2/</link>
+      <link>https://go.zshipu.com/posts/news/why-container-memory-exceed2/</link>
       <pubDate>Fri, 19 Jun 2020 21:29:08 +0800</pubDate>
       
-      <guid>https://go.zshipu.com/posts/why-container-memory-exceed2/</guid>
+      <guid>https://go.zshipu.com/posts/news/why-container-memory-exceed2/</guid>
       <description>在上周的文章《为什么容器内存占用居高不下，频频 OOM》 中，我根据现状进行了分析和说明，收到了很多读者的建议和疑惑，因此有了这一篇文章，包含更进一步的说明和排查。 疑问 一般系统内存过高的情况下，可以通过 free -m 查看当前系统的内存使用情况： 在发现是系统内存占用高后，就会有读者会提到，为什么</description>
     </item>
     
     <item>
       <title>为什么容器内存占用居高不下，频频 OOM</title>
-      <link>https://go.zshipu.com/posts/why-container-memory-exceed/</link>
+      <link>https://go.zshipu.com/posts/news/why-container-memory-exceed/</link>
       <pubDate>Sun, 07 Jun 2020 14:52:19 +0800</pubDate>
       
-      <guid>https://go.zshipu.com/posts/why-container-memory-exceed/</guid>
+      <guid>https://go.zshipu.com/posts/news/why-container-memory-exceed/</guid>
       <description>最近我在回顾思考（写 PPT），整理了现状，发现了这个问题存在多时，经过一番波折，最终确定了元凶和相对可行的解决方案，因此也在这里分享一下排查历程。 时间线： 在上 Kubernetes 的前半年，只是用 Kubernetes，开发没有权限，业务服务极少，忙着写新业务，风平浪静。 在上 Kubernetes 的后半年，业务服务较少，</description>
     </item>
     
     <item>
       <title>Proto 代码到底放哪里？</title>
-      <link>https://go.zshipu.com/posts/where-is-proto/</link>
+      <link>https://go.zshipu.com/posts/news/where-is-proto/</link>
       <pubDate>Sat, 23 May 2020 15:07:37 +0800</pubDate>
       
-      <guid>https://go.zshipu.com/posts/where-is-proto/</guid>
+      <guid>https://go.zshipu.com/posts/news/where-is-proto/</guid>
       <description>虽然公司已经从大单体切换为微服务化有一定的年头了，但一些细节方面的处理总会有不同的人有不同的看法，这其中一个讨论点，就是 Proto 这个 IDL 的代码到底放在哪里？ 目前来看，一共有如下方案， 我们一起来探讨一下 Proto 的存储方式和对应带来的优缺点。 方案一：存放在代码仓库 直接将项目所依赖到的所有 Proto 文件都存</description>
     </item>
     
